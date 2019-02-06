@@ -28,16 +28,18 @@ all:
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
 	oeedger8r ../helloworld.edl --trusted
-	/usr/local/bin/protoc -I../ ../hello.proto --cpp_out=.
-	$(CXX) -c $(CXXFLAGS) -g -std=c++11 enc.cpp -fPIC -I/usr/local/protobufenclave/include -nostdinc++ -I /usr/local/include
+	/usr/local/bin/protoc -I. helloworld.proto --cpp_out=.
+#	/usr/local/bin/protoc -I. helloworld.proto --grpc_out=. --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` helloworld.proto
+	/usr/local/bin/protoc --grpc_out=. --plugin=protoc-gen-grpc=`which grpc_cpp_plugin`  helloworld.proto
+	$(CXX) -c $(CXXFLAGS) -g -std=c++11 enc.cpp pthread_enclave.c eventfd_enclave.c -fPIC -I/usr/local/protobufenclave/include -I/home/azureuser/grpcinstall/include -nostdinc++ #-I /usr/local/include
 	$(CC) -c $(CFLAGS)  -g helloworld_t.c -o helloworld_t.o 
-	$(CXX) -c $(CXXFLAGS) -g -std=c++11 hello.pb.cc -I/usr/local/protobufenclave/include/ -fPIC -pthread -I/usr/local/protobufenclave/include -I/usr/local/include
-	$(CXX) -o helloworldenc.so enc.o helloworld_t.o hello.pb.o -L/usr/local/protobufenclave/lib /usr/local/protobufenclave/lib/libprotobuf.a $(LDFLAGS)
+	$(CXX) -c $(CXXFLAGS) -g -std=c++11 helloworld.pb.cc helloworld.grpc.pb.cc -I/usr/local/protobufenclave/include/ -I/home/azureuser/grpcinstall/include -fPIC -I/usr/local/protobufenclave/include
+	$(CXX) -o helloworldenc.so enc.o pthread_enclave.o eventfd_enclave.o helloworld_t.o helloworld.pb.o helloworld.grpc.pb.o -L/usr/local/protobufenclave/lib ~/grpc/libs/opt/libgrpc_unsecure.a ~/grpc/libs/opt/libgrpc++_unsecure.a /usr/local/protobufenclave/lib/libprotobuf.a  ~/grpc/libs/opt/libgrpc_unsecure.a ~/grpc/libs/opt/libgrpc++_unsecure.a ~/grpc/libs/opt/libz.a -loesocket_enc $(LDFLAGS) -g
 
 
 
 sign:
-	oesign helloworldenc.so helloworld.conf private.pem
+	oesign sign helloworldenc.so helloworld.conf private.pem
 
 clean:
 	rm -f *.so *.o fileencryptor_t.* fileencryptor_args.h private.pem public.pem

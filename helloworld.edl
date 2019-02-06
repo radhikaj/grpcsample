@@ -2,6 +2,12 @@
 // Licensed under the MIT License.
 
 enclave {
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/socket.edl" import *;
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/libcxx.edl" import *;
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/pthread.edl" import *;
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/eventfd.edl" import *;
+
+
     trusted {
     public int ecall_run([in, size=input_len] const char *input,
                          uint64_t input_len,

@@ -26,10 +26,10 @@ build:
 	@ echo "Compilers used: $(CC), $(CXX)"
 	oeedger8r ../helloworld.edl --untrusted
 	/usr/local/bin/protoc -I../ ../hello.proto --cpp_out=.
-	$(CXX) -c  -g $(CXXFLAGS) -std=c++11 host.cpp
+	$(CXX) -c  -g $(CXXFLAGS) -I/home/azureuser/oe/include -std=c++11 host.cpp hostthreads.cpp pthread_host.c eventfd_host.c
 	$(CC) -c -g $(CFLAGS) helloworld_u.c
 	$(CXX) -c -g $(CXXFLAGS) -std=c++11 hello.pb.cc
-	$(CXX) -o helloworldhost host.o helloworld_u.o hello.pb.o $(LDFLAGS) -Wl,--no-undefined -L/usr/local/lib -lprotobuf -pthread 
+	$(CXX) -o helloworldhost hostthreads.o host.o pthread_host.o eventfd_host.o helloworld_u.o hello.pb.o  $(LDFLAGS) -Wl,--no-undefined -L/usr/local/lib -lprotobuf -pthread -loesocket_host -g
 
 clean:
 	rm -f file-encryptorhost fileencryptor_u.* fileencryptor_args.h *.o ../out.decrypted ../out.encrypted
