@@ -111,88 +111,6 @@ done:
 
 
 
-oe_result_t ecall_InitializeSockets(
-        oe_enclave_t* enclave)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ecall_InitializeSockets_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ecall_InitializeSockets_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ecall_InitializeSockets_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) malloc(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call enclave function */
-    if((_result = oe_call_enclave_function(
-                        enclave,
-                        fcn_id_ecall_InitializeSockets,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        free(_buffer);
-    return _result;
-}
-
-
-
 oe_result_t enc_enclave_thread(
         oe_enclave_t* enclave,
         uint64_t enc_key)
@@ -280,7 +198,7 @@ done:
 
 /* ocall functions */
 
-void ocall_ocall_accept(
+void ocall_oe_host_ocall_socket(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -289,8 +207,8 @@ void ocall_ocall_accept(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_accept_args_t* pargs_in = (ocall_accept_args_t*) input_buffer;
-    ocall_accept_args_t* pargs_out = (ocall_accept_args_t*) output_buffer;
+    oe_host_ocall_socket_args_t* pargs_in = (oe_host_ocall_socket_args_t*) input_buffer;
+    oe_host_ocall_socket_args_t* pargs_out = (oe_host_ocall_socket_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -308,9 +226,10 @@ void ocall_ocall_accept(
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_accept(
-        pargs_in->a_hSocket,
-        pargs_in->a_nAddrLen);
+    pargs_out->_retval = oe_host_ocall_socket(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -321,7 +240,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_bind(
+void ocall_oe_host_ocall_socketpair(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -330,8 +249,8 @@ void ocall_ocall_bind(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_bind_args_t* pargs_in = (ocall_bind_args_t*) input_buffer;
-    ocall_bind_args_t* pargs_out = (ocall_bind_args_t*) output_buffer;
+    oe_host_ocall_socketpair_args_t* pargs_in = (oe_host_ocall_socketpair_args_t*) input_buffer;
+    oe_host_ocall_socketpair_args_t* pargs_out = (oe_host_ocall_socketpair_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -345,15 +264,17 @@ void ocall_ocall_bind(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_Name, pargs_in->a_nNameLen);
+    OE_SET_IN_OUT_POINTER(d, sizeof(int[2]));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, sizeof(int[2]));
 
     /* Call user function */
-    pargs_out->_retval = ocall_bind(
-        pargs_in->a_hSocket,
-        (const void*) pargs_in->a_Name,
-        pargs_in->a_nNameLen);
+    pargs_out->_retval = oe_host_ocall_socketpair(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        *(int (*)[2]) pargs_in->d);
 
     /* Success. */
     _result = OE_OK; 
@@ -364,7 +285,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_closesocket(
+void ocall_oe_host_ocall_bind(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -373,8 +294,8 @@ void ocall_ocall_closesocket(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_closesocket_args_t* pargs_in = (ocall_closesocket_args_t*) input_buffer;
-    ocall_closesocket_args_t* pargs_out = (ocall_closesocket_args_t*) output_buffer;
+    oe_host_ocall_bind_args_t* pargs_in = (oe_host_ocall_bind_args_t*) input_buffer;
+    oe_host_ocall_bind_args_t* pargs_out = (oe_host_ocall_bind_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -388,12 +309,15 @@ void ocall_ocall_closesocket(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->c);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_closesocket(
-        pargs_in->a_hSocket);
+    pargs_out->_retval = oe_host_ocall_bind(
+        pargs_in->a,
+        (const struct sockaddr*) pargs_in->b,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -404,7 +328,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_connect(
+void ocall_oe_host_ocall_getsockname(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -413,8 +337,8 @@ void ocall_ocall_connect(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_connect_args_t* pargs_in = (ocall_connect_args_t*) input_buffer;
-    ocall_connect_args_t* pargs_out = (ocall_connect_args_t*) output_buffer;
+    oe_host_ocall_getsockname_args_t* pargs_in = (oe_host_ocall_getsockname_args_t*) input_buffer;
+    oe_host_ocall_getsockname_args_t* pargs_out = (oe_host_ocall_getsockname_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -428,15 +352,19 @@ void ocall_ocall_connect(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_Name, pargs_in->a_nNameLen);
+    OE_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Call user function */
-    pargs_out->_retval = ocall_connect(
-        pargs_in->a_hSocket,
-        (const void*) pargs_in->a_Name,
-        pargs_in->a_nNameLen);
+    pargs_out->_retval = oe_host_ocall_getsockname(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c_,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -447,7 +375,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_getaddrinfo(
+void ocall_oe_host_ocall_connect(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -456,8 +384,8 @@ void ocall_ocall_getaddrinfo(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_getaddrinfo_args_t* pargs_in = (ocall_getaddrinfo_args_t*) input_buffer;
-    ocall_getaddrinfo_args_t* pargs_out = (ocall_getaddrinfo_args_t*) output_buffer;
+    oe_host_ocall_connect_args_t* pargs_in = (oe_host_ocall_connect_args_t*) input_buffer;
+    oe_host_ocall_connect_args_t* pargs_out = (oe_host_ocall_connect_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -471,24 +399,15 @@ void ocall_ocall_getaddrinfo(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_NodeName, pargs_in->a_NodeName_len * sizeof(char));
-    OE_SET_IN_POINTER(a_ServiceName, pargs_in->a_ServiceName_len * sizeof(char));
+    OE_SET_IN_POINTER(b, pargs_in->c);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_SET_OUT_POINTER(buf, pargs_in->len);
-    OE_SET_OUT_POINTER(length_needed, sizeof(size_t));
 
     /* Call user function */
-    pargs_out->_retval = ocall_getaddrinfo(
-        (const char*) pargs_in->a_NodeName,
-        (const char*) pargs_in->a_ServiceName,
-        pargs_in->a_Flags,
-        pargs_in->a_Family,
-        pargs_in->a_SockType,
-        pargs_in->a_Protocol,
-        pargs_in->buf,
-        pargs_in->len,
-        pargs_in->length_needed);
+    pargs_out->_retval = oe_host_ocall_connect(
+        pargs_in->a,
+        (const struct sockaddr*) pargs_in->b,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -499,7 +418,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_gethostname(
+void ocall_oe_host_ocall_getpeername(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -508,8 +427,8 @@ void ocall_ocall_gethostname(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_gethostname_args_t* pargs_in = (ocall_gethostname_args_t*) input_buffer;
-    ocall_gethostname_args_t* pargs_out = (ocall_gethostname_args_t*) output_buffer;
+    oe_host_ocall_getpeername_args_t* pargs_in = (oe_host_ocall_getpeername_args_t*) input_buffer;
+    oe_host_ocall_getpeername_args_t* pargs_out = (oe_host_ocall_getpeername_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -523,12 +442,19 @@ void ocall_ocall_gethostname(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Call user function */
-    pargs_out->_retval = ocall_gethostname(
-        );
+    pargs_out->_retval = oe_host_ocall_getpeername(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c_,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -539,7 +465,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_getnameinfo(
+void ocall_oe_host_ocall_send(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -548,8 +474,8 @@ void ocall_ocall_getnameinfo(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_getnameinfo_args_t* pargs_in = (ocall_getnameinfo_args_t*) input_buffer;
-    ocall_getnameinfo_args_t* pargs_out = (ocall_getnameinfo_args_t*) output_buffer;
+    oe_host_ocall_send_args_t* pargs_in = (oe_host_ocall_send_args_t*) input_buffer;
+    oe_host_ocall_send_args_t* pargs_out = (oe_host_ocall_send_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -563,15 +489,16 @@ void ocall_ocall_getnameinfo(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_Addr, pargs_in->a_AddrLen);
+    OE_SET_IN_POINTER(b, pargs_in->c);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_getnameinfo(
-        (const void*) pargs_in->a_Addr,
-        pargs_in->a_AddrLen,
-        pargs_in->a_Flags);
+    pargs_out->_retval = oe_host_ocall_send(
+        pargs_in->a,
+        (const void*) pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
 
     /* Success. */
     _result = OE_OK; 
@@ -582,7 +509,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_getpeername(
+void ocall_oe_host_ocall_recv(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -591,8 +518,8 @@ void ocall_ocall_getpeername(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_getpeername_args_t* pargs_in = (ocall_getpeername_args_t*) input_buffer;
-    ocall_getpeername_args_t* pargs_out = (ocall_getpeername_args_t*) output_buffer;
+    oe_host_ocall_recv_args_t* pargs_in = (oe_host_ocall_recv_args_t*) input_buffer;
+    oe_host_ocall_recv_args_t* pargs_out = (oe_host_ocall_recv_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -606,13 +533,17 @@ void ocall_ocall_getpeername(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(b, pargs_in->c);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, pargs_in->c);
 
     /* Call user function */
-    pargs_out->_retval = ocall_getpeername(
-        pargs_in->a_hSocket,
-        pargs_in->a_nNameLen);
+    pargs_out->_retval = oe_host_ocall_recv(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
 
     /* Success. */
     _result = OE_OK; 
@@ -623,7 +554,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_getsockname(
+void ocall_oe_host_ocall_sendto(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -632,8 +563,8 @@ void ocall_ocall_getsockname(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_getsockname_args_t* pargs_in = (ocall_getsockname_args_t*) input_buffer;
-    ocall_getsockname_args_t* pargs_out = (ocall_getsockname_args_t*) output_buffer;
+    oe_host_ocall_sendto_args_t* pargs_in = (oe_host_ocall_sendto_args_t*) input_buffer;
+    oe_host_ocall_sendto_args_t* pargs_out = (oe_host_ocall_sendto_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -647,13 +578,18 @@ void ocall_ocall_getsockname(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->c);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_getsockname(
-        pargs_in->a_hSocket,
-        pargs_in->a_nNameLen);
+    pargs_out->_retval = oe_host_ocall_sendto(
+        pargs_in->a,
+        (const void*) pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        (const struct sockaddr*) pargs_in->e,
+        pargs_in->f);
 
     /* Success. */
     _result = OE_OK; 
@@ -664,7 +600,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_getsockopt(
+void ocall_oe_host_ocall_recvfrom(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -673,8 +609,8 @@ void ocall_ocall_getsockopt(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_getsockopt_args_t* pargs_in = (ocall_getsockopt_args_t*) input_buffer;
-    ocall_getsockopt_args_t* pargs_out = (ocall_getsockopt_args_t*) output_buffer;
+    oe_host_ocall_recvfrom_args_t* pargs_in = (oe_host_ocall_recvfrom_args_t*) input_buffer;
+    oe_host_ocall_recvfrom_args_t* pargs_out = (oe_host_ocall_recvfrom_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -688,15 +624,22 @@ void ocall_ocall_getsockopt(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(b, pargs_in->c);
+    OE_SET_IN_OUT_POINTER(f, sizeof(socklen_t));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, pargs_in->c);
+    OE_COPY_AND_SET_IN_OUT_POINTER(f, sizeof(socklen_t));
 
     /* Call user function */
-    pargs_out->_retval = ocall_getsockopt(
-        pargs_in->a_hSocket,
-        pargs_in->a_nLevel,
-        pargs_in->a_nOptName,
-        pargs_in->a_nOptLen);
+    pargs_out->_retval = oe_host_ocall_recvfrom(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f_,
+        pargs_in->f);
 
     /* Success. */
     _result = OE_OK; 
@@ -707,7 +650,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_ioctlsocket(
+void ocall_oe_host_ocall_sendmsg(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -716,8 +659,8 @@ void ocall_ocall_ioctlsocket(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_ioctlsocket_args_t* pargs_in = (ocall_ioctlsocket_args_t*) input_buffer;
-    ocall_ioctlsocket_args_t* pargs_out = (ocall_ioctlsocket_args_t*) output_buffer;
+    oe_host_ocall_sendmsg_args_t* pargs_in = (oe_host_ocall_sendmsg_args_t*) input_buffer;
+    oe_host_ocall_sendmsg_args_t* pargs_out = (oe_host_ocall_sendmsg_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -731,14 +674,21 @@ void ocall_ocall_ioctlsocket(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, sizeof(struct msghdr));
+    OE_SET_IN_POINTER(iov_base, pargs_in->c2);
+    OE_SET_IN_POINTER(iov, (pargs_in->numiov * sizeof(struct iovec)));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_ioctlsocket(
-        pargs_in->a_hSocket,
-        pargs_in->a_nCommand,
-        pargs_in->a_uInputValue);
+    pargs_out->_retval = oe_host_ocall_sendmsg(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->iov_base,
+        pargs_in->c2,
+        pargs_in->iov,
+        pargs_in->numiov);
 
     /* Success. */
     _result = OE_OK; 
@@ -749,7 +699,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_listen(
+void ocall_oe_host_ocall_recvmsg(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -758,8 +708,8 @@ void ocall_ocall_listen(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_listen_args_t* pargs_in = (ocall_listen_args_t*) input_buffer;
-    ocall_listen_args_t* pargs_out = (ocall_listen_args_t*) output_buffer;
+    oe_host_ocall_recvmsg_args_t* pargs_in = (oe_host_ocall_recvmsg_args_t*) input_buffer;
+    oe_host_ocall_recvmsg_args_t* pargs_out = (oe_host_ocall_recvmsg_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -773,59 +723,38 @@ void ocall_ocall_listen(
 
     }
     /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(flags, sizeof(int));
+    OE_SET_IN_OUT_POINTER(name, pargs_in->namelen);
+    OE_SET_IN_OUT_POINTER(actualnamelen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(control, pargs_in->controllen);
+    OE_SET_IN_OUT_POINTER(actualcontrollen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(iov, pargs_in->c2);
+    OE_SET_IN_OUT_POINTER(actualiovlen, sizeof(int));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(flags, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(name, pargs_in->namelen);
+    OE_COPY_AND_SET_IN_OUT_POINTER(actualnamelen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(control, pargs_in->controllen);
+    OE_COPY_AND_SET_IN_OUT_POINTER(actualcontrollen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(iov, pargs_in->c2);
+    OE_COPY_AND_SET_IN_OUT_POINTER(actualiovlen, sizeof(int));
 
     /* Call user function */
-    pargs_out->_retval = ocall_listen(
-        pargs_in->a_hSocket,
-        pargs_in->a_nMaxConnections);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_ocall_recv(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    ocall_recv_args_t* pargs_in = (ocall_recv_args_t*) input_buffer;
-    ocall_recv_args_t* pargs_out = (ocall_recv_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_SET_OUT_POINTER(buf, pargs_in->len);
-    OE_SET_OUT_POINTER(error, sizeof(oe_socket_error_t));
-
-    /* Call user function */
-    pargs_out->_retval = ocall_recv(
-        pargs_in->s,
-        pargs_in->buf,
-        pargs_in->len,
+    pargs_out->_retval = oe_host_ocall_recvmsg(
+        pargs_in->a,
+        pargs_in->msg_iovlen,
         pargs_in->flags,
-        pargs_in->error);
+        pargs_in->name,
+        pargs_in->namelen,
+        pargs_in->actualnamelen,
+        pargs_in->control,
+        pargs_in->controllen,
+        pargs_in->actualcontrollen,
+        pargs_in->c,
+        pargs_in->iov,
+        pargs_in->c2,
+        pargs_in->actualiovlen);
 
     /* Success. */
     _result = OE_OK; 
@@ -836,7 +765,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_select(
+void ocall_oe_host_ocall_getsockopt(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -845,8 +774,102 @@ void ocall_ocall_select(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_select_args_t* pargs_in = (ocall_select_args_t*) input_buffer;
-    ocall_select_args_t* pargs_out = (ocall_select_args_t*) output_buffer;
+    oe_host_ocall_getsockopt_args_t* pargs_in = (oe_host_ocall_getsockopt_args_t*) input_buffer;
+    oe_host_ocall_getsockopt_args_t* pargs_out = (oe_host_ocall_getsockopt_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(d, pargs_in->e_);
+    OE_SET_IN_OUT_POINTER(e, sizeof(socklen_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, pargs_in->e_);
+    OE_COPY_AND_SET_IN_OUT_POINTER(e, sizeof(socklen_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getsockopt(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e_,
+        pargs_in->e);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_setsockopt(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_setsockopt_args_t* pargs_in = (oe_host_ocall_setsockopt_args_t*) input_buffer;
+    oe_host_ocall_setsockopt_args_t* pargs_out = (oe_host_ocall_setsockopt_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(d, pargs_in->e);
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_setsockopt(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        (const void*) pargs_in->d,
+        pargs_in->e);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_listen(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_listen_args_t* pargs_in = (oe_host_ocall_listen_args_t*) input_buffer;
+    oe_host_ocall_listen_args_t* pargs_out = (oe_host_ocall_listen_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -864,12 +887,9 @@ void ocall_ocall_select(
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_select(
-        pargs_in->a_nFds,
-        pargs_in->a_ReadFds,
-        pargs_in->a_WriteFds,
-        pargs_in->a_ExceptFds,
-        pargs_in->a_Timeval);
+    pargs_out->_retval = oe_host_ocall_listen(
+        pargs_in->a,
+        pargs_in->b);
 
     /* Success. */
     _result = OE_OK; 
@@ -880,7 +900,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_send(
+void ocall_oe_host_ocall_accept(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -889,8 +909,8 @@ void ocall_ocall_send(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_send_args_t* pargs_in = (ocall_send_args_t*) input_buffer;
-    ocall_send_args_t* pargs_out = (ocall_send_args_t*) output_buffer;
+    oe_host_ocall_accept_args_t* pargs_in = (oe_host_ocall_accept_args_t*) input_buffer;
+    oe_host_ocall_accept_args_t* pargs_out = (oe_host_ocall_accept_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -904,16 +924,19 @@ void ocall_ocall_send(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_Message, pargs_in->a_nMessageLen);
+    OE_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, pargs_in->c_);
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(socklen_t));
 
     /* Call user function */
-    pargs_out->_retval = ocall_send(
-        pargs_in->a_hSocket,
-        (const void*) pargs_in->a_Message,
-        pargs_in->a_nMessageLen,
-        pargs_in->a_Flags);
+    pargs_out->_retval = oe_host_ocall_accept(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c_,
+        pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -924,7 +947,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_setsockopt(
+void ocall_oe_host_ocall_shutdown(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -933,53 +956,8 @@ void ocall_ocall_setsockopt(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_setsockopt_args_t* pargs_in = (ocall_setsockopt_args_t*) input_buffer;
-    ocall_setsockopt_args_t* pargs_out = (ocall_setsockopt_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a_OptVal, pargs_in->a_nOptLen);
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-
-    /* Call user function */
-    pargs_out->_retval = ocall_setsockopt(
-        pargs_in->a_hSocket,
-        pargs_in->a_nLevel,
-        pargs_in->a_nOptName,
-        (const void*) pargs_in->a_OptVal,
-        pargs_in->a_nOptLen);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_ocall_shutdown(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    ocall_shutdown_args_t* pargs_in = (ocall_shutdown_args_t*) input_buffer;
-    ocall_shutdown_args_t* pargs_out = (ocall_shutdown_args_t*) output_buffer;
+    oe_host_ocall_shutdown_args_t* pargs_in = (oe_host_ocall_shutdown_args_t*) input_buffer;
+    oe_host_ocall_shutdown_args_t* pargs_out = (oe_host_ocall_shutdown_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -997,9 +975,9 @@ void ocall_ocall_shutdown(
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_shutdown(
-        pargs_in->a_hSocket,
-        pargs_in->a_How);
+    pargs_out->_retval = oe_host_ocall_shutdown(
+        pargs_in->a,
+        pargs_in->b);
 
     /* Success. */
     _result = OE_OK; 
@@ -1010,7 +988,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_socket(
+void ocall_oe_host_ocall_sockatmark(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -1019,8 +997,8 @@ void ocall_ocall_socket(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_socket_args_t* pargs_in = (ocall_socket_args_t*) input_buffer;
-    ocall_socket_args_t* pargs_out = (ocall_socket_args_t*) output_buffer;
+    oe_host_ocall_sockatmark_args_t* pargs_in = (oe_host_ocall_sockatmark_args_t*) input_buffer;
+    oe_host_ocall_sockatmark_args_t* pargs_out = (oe_host_ocall_sockatmark_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -1038,10 +1016,8 @@ void ocall_ocall_socket(
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_socket(
-        pargs_in->a_AddressFamily,
-        pargs_in->a_Type,
-        pargs_in->a_Protocol);
+    pargs_out->_retval = oe_host_ocall_sockatmark(
+        pargs_in->a);
 
     /* Success. */
     _result = OE_OK; 
@@ -1052,7 +1028,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_ocall_WSACleanup(
+void ocall_oe_host_ocall_isfdtype(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -1061,8 +1037,8 @@ void ocall_ocall_WSACleanup(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    ocall_WSACleanup_args_t* pargs_in = (ocall_WSACleanup_args_t*) input_buffer;
-    ocall_WSACleanup_args_t* pargs_out = (ocall_WSACleanup_args_t*) output_buffer;
+    oe_host_ocall_isfdtype_args_t* pargs_in = (oe_host_ocall_isfdtype_args_t*) input_buffer;
+    oe_host_ocall_isfdtype_args_t* pargs_out = (oe_host_ocall_isfdtype_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -1080,48 +1056,9 @@ void ocall_ocall_WSACleanup(
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
     /* Call user function */
-    pargs_out->_retval = ocall_WSACleanup(
-        );
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_ocall_WSAStartup(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    ocall_WSAStartup_args_t* pargs_in = (ocall_WSAStartup_args_t*) input_buffer;
-    ocall_WSAStartup_args_t* pargs_out = (ocall_WSAStartup_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-
-    /* Call user function */
-    pargs_out->_retval = ocall_WSAStartup(
-        );
+    pargs_out->_retval = oe_host_ocall_isfdtype(
+        pargs_in->a,
+        pargs_in->b);
 
     /* Success. */
     _result = OE_OK; 
@@ -1293,7 +1230,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_oe_host_ocall_pthread_condattr_init(
+void ocall_host_cond_timedwait(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -1302,8 +1239,8 @@ void ocall_oe_host_ocall_pthread_condattr_init(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_init_args_t* pargs_in = (oe_host_ocall_pthread_condattr_init_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_init_args_t* pargs_out = (oe_host_ocall_pthread_condattr_init_args_t*) output_buffer;
+    host_cond_timedwait_args_t* pargs_in = (host_cond_timedwait_args_t*) input_buffer;
+    host_cond_timedwait_args_t* pargs_out = (host_cond_timedwait_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -1317,14 +1254,14 @@ void ocall_oe_host_ocall_pthread_condattr_init(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
 
     /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_init(
-        pargs_in->a);
+    pargs_out->_retval = host_cond_timedwait(
+        pargs_in->cond,
+        pargs_in->mutex,
+        (const struct timespec*) pargs_in->abstime);
 
     /* Success. */
     _result = OE_OK; 
@@ -1335,7 +1272,7 @@ done:
         pargs_out->_result = _result;
 }
 
-void ocall_oe_host_ocall_pthread_condattr_destroy(
+void ocall_oe_host_ocall_pthread_cond_timedwait(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
         size_t* output_bytes_written)
@@ -1344,8 +1281,8 @@ void ocall_oe_host_ocall_pthread_condattr_destroy(
     OE_UNUSED(input_buffer_size);
 
     /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_destroy_args_t* pargs_in = (oe_host_ocall_pthread_condattr_destroy_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_destroy_args_t* pargs_out = (oe_host_ocall_pthread_condattr_destroy_args_t*) output_buffer;
+    oe_host_ocall_pthread_cond_timedwait_args_t* pargs_in = (oe_host_ocall_pthread_cond_timedwait_args_t*) input_buffer;
+    oe_host_ocall_pthread_cond_timedwait_args_t* pargs_out = (oe_host_ocall_pthread_cond_timedwait_args_t*) output_buffer;
 
     size_t input_buffer_offset = 0;
     size_t output_buffer_offset = 0;
@@ -1359,188 +1296,19 @@ void ocall_oe_host_ocall_pthread_condattr_destroy(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_cond_t));
+    OE_SET_IN_OUT_POINTER(b, sizeof(pthread_mutex_t));
+    OE_SET_IN_POINTER(c, sizeof(struct timespec));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_cond_t));
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(pthread_mutex_t));
 
     /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_destroy(
-        pargs_in->a);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_oe_host_ocall_pthread_condattr_getpshared(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_getpshared_args_t* pargs_in = (oe_host_ocall_pthread_condattr_getpshared_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_getpshared_args_t* pargs_out = (oe_host_ocall_pthread_condattr_getpshared_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a, sizeof(pthread_condattr_t));
-    OE_SET_IN_OUT_POINTER(b, sizeof(int));
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(int));
-
-    /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_getpshared(
-        (const pthread_condattr_t*) pargs_in->a,
-        pargs_in->b);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_oe_host_ocall_pthread_condattr_setpshared(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_setpshared_args_t* pargs_in = (oe_host_ocall_pthread_condattr_setpshared_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_setpshared_args_t* pargs_out = (oe_host_ocall_pthread_condattr_setpshared_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
-
-    /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_setpshared(
+    pargs_out->_retval = oe_host_ocall_pthread_cond_timedwait(
         pargs_in->a,
-        pargs_in->b);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_oe_host_ocall_pthread_condattr_getclock(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_getclock_args_t* pargs_in = (oe_host_ocall_pthread_condattr_getclock_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_getclock_args_t* pargs_out = (oe_host_ocall_pthread_condattr_getclock_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(a, sizeof(pthread_condattr_t));
-    OE_SET_IN_OUT_POINTER(b, sizeof(clockid_t));
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(clockid_t));
-
-    /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_getclock(
-        (const pthread_condattr_t*) pargs_in->a,
-        pargs_in->b);
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
-void ocall_oe_host_ocall_pthread_condattr_setclock(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-    OE_UNUSED(input_buffer_size);
-
-    /* Prepare parameters */
-    oe_host_ocall_pthread_condattr_setclock_args_t* pargs_in = (oe_host_ocall_pthread_condattr_setclock_args_t*) input_buffer;
-    oe_host_ocall_pthread_condattr_setclock_args_t* pargs_out = (oe_host_ocall_pthread_condattr_setclock_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers are valid */
-    if (!input_buffer || !output_buffer) {
-        _result = OE_INVALID_PARAMETER;
-        goto done;
-
-    }
-    /* Set in and in-out pointers */
-    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
-
-    /* Call user function */
-    pargs_out->_retval = oe_host_ocall_pthread_condattr_setclock(
-        pargs_in->a,
-        pargs_in->b);
+        pargs_in->b,
+        (const struct timespec*) pargs_in->c);
 
     /* Success. */
     _result = OE_OK; 
@@ -1678,6 +1446,264 @@ done:
         pargs_out->_result = _result;
 }
 
+void ocall_oe_host_ocall_pthread_condattr_init(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_init_args_t* pargs_in = (oe_host_ocall_pthread_condattr_init_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_init_args_t* pargs_out = (oe_host_ocall_pthread_condattr_init_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_init(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_pthread_condattr_destroy(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_destroy_args_t* pargs_in = (oe_host_ocall_pthread_condattr_destroy_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_destroy_args_t* pargs_out = (oe_host_ocall_pthread_condattr_destroy_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_destroy(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_pthread_condattr_setclock(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_setclock_args_t* pargs_in = (oe_host_ocall_pthread_condattr_setclock_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_setclock_args_t* pargs_out = (oe_host_ocall_pthread_condattr_setclock_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_setclock(
+        pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_pthread_condattr_setpshared(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_setpshared_args_t* pargs_in = (oe_host_ocall_pthread_condattr_setpshared_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_setpshared_args_t* pargs_out = (oe_host_ocall_pthread_condattr_setpshared_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(a, sizeof(pthread_condattr_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_setpshared(
+        pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_pthread_condattr_getclock(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_getclock_args_t* pargs_in = (oe_host_ocall_pthread_condattr_getclock_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_getclock_args_t* pargs_out = (oe_host_ocall_pthread_condattr_getclock_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, sizeof(pthread_condattr_t));
+    OE_SET_IN_OUT_POINTER(b, sizeof(clockid_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(clockid_t));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_getclock(
+        (const pthread_condattr_t*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_pthread_condattr_getpshared(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_pthread_condattr_getpshared_args_t* pargs_in = (oe_host_ocall_pthread_condattr_getpshared_args_t*) input_buffer;
+    oe_host_ocall_pthread_condattr_getpshared_args_t* pargs_out = (oe_host_ocall_pthread_condattr_getpshared_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, sizeof(pthread_condattr_t));
+    OE_SET_IN_OUT_POINTER(b, sizeof(int));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(int));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_pthread_condattr_getpshared(
+        (const pthread_condattr_t*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
 void ocall_oe_host_ocall_eventfd(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
@@ -1803,45 +1829,2581 @@ done:
         pargs_out->_result = _result;
 }
 
+void ocall_oe_host_ocall_htonl(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_htonl_args_t* pargs_in = (oe_host_ocall_htonl_args_t*) input_buffer;
+    oe_host_ocall_htonl_args_t* pargs_out = (oe_host_ocall_htonl_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_htonl(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_htons(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_htons_args_t* pargs_in = (oe_host_ocall_htons_args_t*) input_buffer;
+    oe_host_ocall_htons_args_t* pargs_out = (oe_host_ocall_htons_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_htons(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_ntohl(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_ntohl_args_t* pargs_in = (oe_host_ocall_ntohl_args_t*) input_buffer;
+    oe_host_ocall_ntohl_args_t* pargs_out = (oe_host_ocall_ntohl_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_ntohl(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_ntohs(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_ntohs_args_t* pargs_in = (oe_host_ocall_ntohs_args_t*) input_buffer;
+    oe_host_ocall_ntohs_args_t* pargs_out = (oe_host_ocall_ntohs_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_ntohs(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_addr(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_addr_args_t* pargs_in = (oe_host_ocall_inet_addr_args_t*) input_buffer;
+    oe_host_ocall_inet_addr_args_t* pargs_out = (oe_host_ocall_inet_addr_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_addr(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_network(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_network_args_t* pargs_in = (oe_host_ocall_inet_network_args_t*) input_buffer;
+    oe_host_ocall_inet_network_args_t* pargs_out = (oe_host_ocall_inet_network_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_network(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_ntoa(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_ntoa_args_t* pargs_in = (oe_host_ocall_inet_ntoa_args_t*) input_buffer;
+    oe_host_ocall_inet_ntoa_args_t* pargs_out = (oe_host_ocall_inet_ntoa_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_ntoa(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_pton(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_pton_args_t* pargs_in = (oe_host_ocall_inet_pton_args_t*) input_buffer;
+    oe_host_ocall_inet_pton_args_t* pargs_out = (oe_host_ocall_inet_pton_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(c, pargs_in->d);
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, pargs_in->d);
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_pton(
+        pargs_in->a,
+        (const char*) pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_ntop(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_ntop_args_t* pargs_in = (oe_host_ocall_inet_ntop_args_t*) input_buffer;
+    oe_host_ocall_inet_ntop_args_t* pargs_out = (oe_host_ocall_inet_ntop_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->e);
+    OE_SET_IN_OUT_POINTER(c, sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(char));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_ntop(
+        pargs_in->a,
+        (const void*) pargs_in->b,
+        pargs_in->e,
+        pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_aton(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_aton_args_t* pargs_in = (oe_host_ocall_inet_aton_args_t*) input_buffer;
+    oe_host_ocall_inet_aton_args_t* pargs_out = (oe_host_ocall_inet_aton_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(b, sizeof(struct in_addr));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(struct in_addr));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_aton(
+        (const char*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_makeaddr(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_makeaddr_args_t* pargs_in = (oe_host_ocall_inet_makeaddr_args_t*) input_buffer;
+    oe_host_ocall_inet_makeaddr_args_t* pargs_out = (oe_host_ocall_inet_makeaddr_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_makeaddr(
+        pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_lnaof(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_lnaof_args_t* pargs_in = (oe_host_ocall_inet_lnaof_args_t*) input_buffer;
+    oe_host_ocall_inet_lnaof_args_t* pargs_out = (oe_host_ocall_inet_lnaof_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_lnaof(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_inet_netof(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_inet_netof_args_t* pargs_in = (oe_host_ocall_inet_netof_args_t*) input_buffer;
+    oe_host_ocall_inet_netof_args_t* pargs_out = (oe_host_ocall_inet_netof_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_inet_netof(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getaddrinfo(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getaddrinfo_args_t* pargs_in = (oe_host_ocall_getaddrinfo_args_t*) input_buffer;
+    oe_host_ocall_getaddrinfo_args_t* pargs_out = (oe_host_ocall_getaddrinfo_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+    OE_SET_IN_POINTER(c, sizeof(struct addrinfo));
+    OE_SET_IN_OUT_POINTER(d, sizeof(struct addrinfo*));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, sizeof(struct addrinfo*));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getaddrinfo(
+        (const char*) pargs_in->a,
+        (const char*) pargs_in->b,
+        (const struct addrinfo*) pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_freeaddrinfo(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_freeaddrinfo_args_t* pargs_in = (oe_host_ocall_freeaddrinfo_args_t*) input_buffer;
+    oe_host_ocall_freeaddrinfo_args_t* pargs_out = (oe_host_ocall_freeaddrinfo_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_freeaddrinfo(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getnameinfo(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getnameinfo_args_t* pargs_in = (oe_host_ocall_getnameinfo_args_t*) input_buffer;
+    oe_host_ocall_getnameinfo_args_t* pargs_out = (oe_host_ocall_getnameinfo_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->b);
+    OE_SET_IN_OUT_POINTER(c, pargs_in->d);
+    OE_SET_IN_OUT_POINTER(e, pargs_in->f);
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, pargs_in->d);
+    OE_COPY_AND_SET_IN_OUT_POINTER(e, pargs_in->f);
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getnameinfo(
+        (const struct sockaddr*) pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f,
+        pargs_in->g);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gai_strerror(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gai_strerror_args_t* pargs_in = (oe_host_ocall_gai_strerror_args_t*) input_buffer;
+    oe_host_ocall_gai_strerror_args_t* pargs_out = (oe_host_ocall_gai_strerror_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gai_strerror(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_sethostent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_sethostent_args_t* pargs_in = (oe_host_ocall_sethostent_args_t*) input_buffer;
+    oe_host_ocall_sethostent_args_t* pargs_out = (oe_host_ocall_sethostent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_sethostent(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_endhostent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_endhostent_args_t* pargs_in = (oe_host_ocall_endhostent_args_t*) input_buffer;
+    oe_host_ocall_endhostent_args_t* pargs_out = (oe_host_ocall_endhostent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_endhostent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostent_args_t* pargs_in = (oe_host_ocall_gethostent_args_t*) input_buffer;
+    oe_host_ocall_gethostent_args_t* pargs_out = (oe_host_ocall_gethostent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_setnetent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_setnetent_args_t* pargs_in = (oe_host_ocall_setnetent_args_t*) input_buffer;
+    oe_host_ocall_setnetent_args_t* pargs_out = (oe_host_ocall_setnetent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_setnetent(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_endnetent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_endnetent_args_t* pargs_in = (oe_host_ocall_endnetent_args_t*) input_buffer;
+    oe_host_ocall_endnetent_args_t* pargs_out = (oe_host_ocall_endnetent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_endnetent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getnetent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getnetent_args_t* pargs_in = (oe_host_ocall_getnetent_args_t*) input_buffer;
+    oe_host_ocall_getnetent_args_t* pargs_out = (oe_host_ocall_getnetent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getnetent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getnetbyaddr(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getnetbyaddr_args_t* pargs_in = (oe_host_ocall_getnetbyaddr_args_t*) input_buffer;
+    oe_host_ocall_getnetbyaddr_args_t* pargs_out = (oe_host_ocall_getnetbyaddr_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getnetbyaddr(
+        pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getnetbyname(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getnetbyname_args_t* pargs_in = (oe_host_ocall_getnetbyname_args_t*) input_buffer;
+    oe_host_ocall_getnetbyname_args_t* pargs_out = (oe_host_ocall_getnetbyname_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getnetbyname(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_setservent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_setservent_args_t* pargs_in = (oe_host_ocall_setservent_args_t*) input_buffer;
+    oe_host_ocall_setservent_args_t* pargs_out = (oe_host_ocall_setservent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_setservent(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_endservent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_endservent_args_t* pargs_in = (oe_host_ocall_endservent_args_t*) input_buffer;
+    oe_host_ocall_endservent_args_t* pargs_out = (oe_host_ocall_endservent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_endservent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getservent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getservent_args_t* pargs_in = (oe_host_ocall_getservent_args_t*) input_buffer;
+    oe_host_ocall_getservent_args_t* pargs_out = (oe_host_ocall_getservent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getservent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getservbyname(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getservbyname_args_t* pargs_in = (oe_host_ocall_getservbyname_args_t*) input_buffer;
+    oe_host_ocall_getservbyname_args_t* pargs_out = (oe_host_ocall_getservbyname_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getservbyname(
+        (const char*) pargs_in->a,
+        (const char*) pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getservbyport(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getservbyport_args_t* pargs_in = (oe_host_ocall_getservbyport_args_t*) input_buffer;
+    oe_host_ocall_getservbyport_args_t* pargs_out = (oe_host_ocall_getservbyport_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getservbyport(
+        pargs_in->a,
+        (const char*) pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_setprotoent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_setprotoent_args_t* pargs_in = (oe_host_ocall_setprotoent_args_t*) input_buffer;
+    oe_host_ocall_setprotoent_args_t* pargs_out = (oe_host_ocall_setprotoent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_setprotoent(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_endprotoent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_endprotoent_args_t* pargs_in = (oe_host_ocall_endprotoent_args_t*) input_buffer;
+    oe_host_ocall_endprotoent_args_t* pargs_out = (oe_host_ocall_endprotoent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_endprotoent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getprotoent(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getprotoent_args_t* pargs_in = (oe_host_ocall_getprotoent_args_t*) input_buffer;
+    oe_host_ocall_getprotoent_args_t* pargs_out = (oe_host_ocall_getprotoent_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getprotoent(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getprotobyname(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getprotobyname_args_t* pargs_in = (oe_host_ocall_getprotobyname_args_t*) input_buffer;
+    oe_host_ocall_getprotobyname_args_t* pargs_out = (oe_host_ocall_getprotobyname_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getprotobyname(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getprotobynumber(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getprotobynumber_args_t* pargs_in = (oe_host_ocall_getprotobynumber_args_t*) input_buffer;
+    oe_host_ocall_getprotobynumber_args_t* pargs_out = (oe_host_ocall_getprotobynumber_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getprotobynumber(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyname(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyname_args_t* pargs_in = (oe_host_ocall_gethostbyname_args_t*) input_buffer;
+    oe_host_ocall_gethostbyname_args_t* pargs_out = (oe_host_ocall_gethostbyname_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyname(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyaddr(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyaddr_args_t* pargs_in = (oe_host_ocall_gethostbyaddr_args_t*) input_buffer;
+    oe_host_ocall_gethostbyaddr_args_t* pargs_out = (oe_host_ocall_gethostbyaddr_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->b);
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyaddr(
+        (const void*) pargs_in->a,
+        pargs_in->b,
+        pargs_in->c);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall___h_errno_location(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall___h_errno_location_args_t* pargs_in = (oe_host_ocall___h_errno_location_args_t*) input_buffer;
+    oe_host_ocall___h_errno_location_args_t* pargs_out = (oe_host_ocall___h_errno_location_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall___h_errno_location(
+        );
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_herror(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_herror_args_t* pargs_in = (oe_host_ocall_herror_args_t*) input_buffer;
+    oe_host_ocall_herror_args_t* pargs_out = (oe_host_ocall_herror_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_herror(
+        (const char*) pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_hstrerror(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_hstrerror_args_t* pargs_in = (oe_host_ocall_hstrerror_args_t*) input_buffer;
+    oe_host_ocall_hstrerror_args_t* pargs_out = (oe_host_ocall_hstrerror_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_hstrerror(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyname_r(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyname_r_args_t* pargs_in = (oe_host_ocall_gethostbyname_r_args_t*) input_buffer;
+    oe_host_ocall_gethostbyname_r_args_t* pargs_out = (oe_host_ocall_gethostbyname_r_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(b, sizeof(struct hostent));
+    OE_SET_IN_OUT_POINTER(c, pargs_in->d);
+    OE_SET_IN_OUT_POINTER(e, sizeof(struct hostent*));
+    OE_SET_IN_OUT_POINTER(f, sizeof(int));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(struct hostent));
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, pargs_in->d);
+    OE_COPY_AND_SET_IN_OUT_POINTER(e, sizeof(struct hostent*));
+    OE_COPY_AND_SET_IN_OUT_POINTER(f, sizeof(int));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyname_r(
+        (const char*) pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyname2_r(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyname2_r_args_t* pargs_in = (oe_host_ocall_gethostbyname2_r_args_t*) input_buffer;
+    oe_host_ocall_gethostbyname2_r_args_t* pargs_out = (oe_host_ocall_gethostbyname2_r_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(c, sizeof(struct hostent));
+    OE_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_SET_IN_OUT_POINTER(f, sizeof(struct hostent*));
+    OE_SET_IN_OUT_POINTER(g, sizeof(int));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(struct hostent));
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_COPY_AND_SET_IN_OUT_POINTER(f, sizeof(struct hostent*));
+    OE_COPY_AND_SET_IN_OUT_POINTER(g, sizeof(int));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyname2_r(
+        (const char*) pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f,
+        pargs_in->g);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyname2(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyname2_args_t* pargs_in = (oe_host_ocall_gethostbyname2_args_t*) input_buffer;
+    oe_host_ocall_gethostbyname2_args_t* pargs_out = (oe_host_ocall_gethostbyname2_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyname2(
+        (const char*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_gethostbyaddr_r(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_gethostbyaddr_r_args_t* pargs_in = (oe_host_ocall_gethostbyaddr_r_args_t*) input_buffer;
+    oe_host_ocall_gethostbyaddr_r_args_t* pargs_out = (oe_host_ocall_gethostbyaddr_r_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->b);
+    OE_SET_IN_OUT_POINTER(d, sizeof(struct hostent));
+    OE_SET_IN_OUT_POINTER(e, pargs_in->f);
+    OE_SET_IN_OUT_POINTER(g, sizeof(struct hostent*));
+    OE_SET_IN_OUT_POINTER(h, sizeof(int));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, sizeof(struct hostent));
+    OE_COPY_AND_SET_IN_OUT_POINTER(e, pargs_in->f);
+    OE_COPY_AND_SET_IN_OUT_POINTER(g, sizeof(struct hostent*));
+    OE_COPY_AND_SET_IN_OUT_POINTER(h, sizeof(int));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_gethostbyaddr_r(
+        (const void*) pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f,
+        pargs_in->g,
+        pargs_in->h);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getservbyport_r(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getservbyport_r_args_t* pargs_in = (oe_host_ocall_getservbyport_r_args_t*) input_buffer;
+    oe_host_ocall_getservbyport_r_args_t* pargs_out = (oe_host_ocall_getservbyport_r_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(c, sizeof(struct servent));
+    OE_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_SET_IN_OUT_POINTER(f, sizeof(struct servent*));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(struct servent));
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_COPY_AND_SET_IN_OUT_POINTER(f, sizeof(struct servent*));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getservbyport_r(
+        pargs_in->a,
+        (const char*) pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_getservbyname_r(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_getservbyname_r_args_t* pargs_in = (oe_host_ocall_getservbyname_r_args_t*) input_buffer;
+    oe_host_ocall_getservbyname_r_args_t* pargs_out = (oe_host_ocall_getservbyname_r_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+    OE_SET_IN_OUT_POINTER(c, sizeof(struct servent));
+    OE_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_SET_IN_OUT_POINTER(f, sizeof(struct servent*));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(c, sizeof(struct servent));
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, pargs_in->e);
+    OE_COPY_AND_SET_IN_OUT_POINTER(f, sizeof(struct servent*));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_getservbyname_r(
+        (const char*) pargs_in->a,
+        (const char*) pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        pargs_in->e,
+        pargs_in->f);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_epoll_create(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_epoll_create_args_t* pargs_in = (oe_host_ocall_epoll_create_args_t*) input_buffer;
+    oe_host_ocall_epoll_create_args_t* pargs_out = (oe_host_ocall_epoll_create_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_epoll_create(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_epoll_create1(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_epoll_create1_args_t* pargs_in = (oe_host_ocall_epoll_create1_args_t*) input_buffer;
+    oe_host_ocall_epoll_create1_args_t* pargs_out = (oe_host_ocall_epoll_create1_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_epoll_create1(
+        pargs_in->a);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_epoll_ctl(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_epoll_ctl_args_t* pargs_in = (oe_host_ocall_epoll_ctl_args_t*) input_buffer;
+    oe_host_ocall_epoll_ctl_args_t* pargs_out = (oe_host_ocall_epoll_ctl_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(d, sizeof(struct epoll_event));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(d, sizeof(struct epoll_event));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_epoll_ctl(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_epoll_wait(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_epoll_wait_args_t* pargs_in = (oe_host_ocall_epoll_wait_args_t*) input_buffer;
+    oe_host_ocall_epoll_wait_args_t* pargs_out = (oe_host_ocall_epoll_wait_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(b, sizeof(struct epoll_event));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(struct epoll_event));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_epoll_wait(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_epoll_pwait(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_epoll_pwait_args_t* pargs_in = (oe_host_ocall_epoll_pwait_args_t*) input_buffer;
+    oe_host_ocall_epoll_pwait_args_t* pargs_out = (oe_host_ocall_epoll_pwait_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_OUT_POINTER(b, sizeof(struct epoll_event));
+    OE_SET_IN_POINTER(e, sizeof(sigset_t));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(struct epoll_event));
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_epoll_pwait(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d,
+        (const sigset_t*) pargs_in->e);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_creat(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_creat_args_t* pargs_in = (oe_host_ocall_creat_args_t*) input_buffer;
+    oe_host_ocall_creat_args_t* pargs_out = (oe_host_ocall_creat_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_creat(
+        (const char*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_fcntl(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_fcntl_args_t* pargs_in = (oe_host_ocall_fcntl_args_t*) input_buffer;
+    oe_host_ocall_fcntl_args_t* pargs_out = (oe_host_ocall_fcntl_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_fcntl(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_open(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_open_args_t* pargs_in = (oe_host_ocall_open_args_t*) input_buffer;
+    oe_host_ocall_open_args_t* pargs_out = (oe_host_ocall_open_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(a, pargs_in->a_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_open(
+        (const char*) pargs_in->a,
+        pargs_in->b);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_openat(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_openat_args_t* pargs_in = (oe_host_ocall_openat_args_t*) input_buffer;
+    oe_host_ocall_openat_args_t* pargs_out = (oe_host_ocall_openat_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+    OE_SET_IN_POINTER(b, pargs_in->b_len * sizeof(char));
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_openat(
+        pargs_in->a,
+        (const char*) pargs_in->b,
+        pargs_in->c);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_posix_fadvise(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_posix_fadvise_args_t* pargs_in = (oe_host_ocall_posix_fadvise_args_t*) input_buffer;
+    oe_host_ocall_posix_fadvise_args_t* pargs_out = (oe_host_ocall_posix_fadvise_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_posix_fadvise(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c,
+        pargs_in->d);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_posix_fallocate(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_posix_fallocate_args_t* pargs_in = (oe_host_ocall_posix_fallocate_args_t*) input_buffer;
+    oe_host_ocall_posix_fallocate_args_t* pargs_out = (oe_host_ocall_posix_fallocate_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_posix_fallocate(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
+void ocall_oe_host_ocall_lockf(
+        uint8_t* input_buffer, size_t input_buffer_size,
+        uint8_t* output_buffer, size_t output_buffer_size,
+        size_t* output_bytes_written)
+{
+    oe_result_t _result = OE_FAILURE;
+    OE_UNUSED(input_buffer_size);
+
+    /* Prepare parameters */
+    oe_host_ocall_lockf_args_t* pargs_in = (oe_host_ocall_lockf_args_t*) input_buffer;
+    oe_host_ocall_lockf_args_t* pargs_out = (oe_host_ocall_lockf_args_t*) output_buffer;
+
+    size_t input_buffer_offset = 0;
+    size_t output_buffer_offset = 0;
+    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
+    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
+
+    /* Make sure input and output buffers are valid */
+    if (!input_buffer || !output_buffer) {
+        _result = OE_INVALID_PARAMETER;
+        goto done;
+
+    }
+    /* Set in and in-out pointers */
+
+    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
+
+    /* Call user function */
+    pargs_out->_retval = oe_host_ocall_lockf(
+        pargs_in->a,
+        pargs_in->b,
+        pargs_in->c);
+
+    /* Success. */
+    _result = OE_OK; 
+    *output_bytes_written = output_buffer_offset;
+
+done:
+    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
+        pargs_out->_result = _result;
+}
+
 
 /*ocall function table*/
 static oe_ocall_func_t __helloworld_ocall_function_table[]= {
-    (oe_ocall_func_t) ocall_ocall_accept,
-    (oe_ocall_func_t) ocall_ocall_bind,
-    (oe_ocall_func_t) ocall_ocall_closesocket,
-    (oe_ocall_func_t) ocall_ocall_connect,
-    (oe_ocall_func_t) ocall_ocall_getaddrinfo,
-    (oe_ocall_func_t) ocall_ocall_gethostname,
-    (oe_ocall_func_t) ocall_ocall_getnameinfo,
-    (oe_ocall_func_t) ocall_ocall_getpeername,
-    (oe_ocall_func_t) ocall_ocall_getsockname,
-    (oe_ocall_func_t) ocall_ocall_getsockopt,
-    (oe_ocall_func_t) ocall_ocall_ioctlsocket,
-    (oe_ocall_func_t) ocall_ocall_listen,
-    (oe_ocall_func_t) ocall_ocall_recv,
-    (oe_ocall_func_t) ocall_ocall_select,
-    (oe_ocall_func_t) ocall_ocall_send,
-    (oe_ocall_func_t) ocall_ocall_setsockopt,
-    (oe_ocall_func_t) ocall_ocall_shutdown,
-    (oe_ocall_func_t) ocall_ocall_socket,
-    (oe_ocall_func_t) ocall_ocall_WSACleanup,
-    (oe_ocall_func_t) ocall_ocall_WSAStartup,
+    (oe_ocall_func_t) ocall_oe_host_ocall_socket,
+    (oe_ocall_func_t) ocall_oe_host_ocall_socketpair,
+    (oe_ocall_func_t) ocall_oe_host_ocall_bind,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getsockname,
+    (oe_ocall_func_t) ocall_oe_host_ocall_connect,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getpeername,
+    (oe_ocall_func_t) ocall_oe_host_ocall_send,
+    (oe_ocall_func_t) ocall_oe_host_ocall_recv,
+    (oe_ocall_func_t) ocall_oe_host_ocall_sendto,
+    (oe_ocall_func_t) ocall_oe_host_ocall_recvfrom,
+    (oe_ocall_func_t) ocall_oe_host_ocall_sendmsg,
+    (oe_ocall_func_t) ocall_oe_host_ocall_recvmsg,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getsockopt,
+    (oe_ocall_func_t) ocall_oe_host_ocall_setsockopt,
+    (oe_ocall_func_t) ocall_oe_host_ocall_listen,
+    (oe_ocall_func_t) ocall_oe_host_ocall_accept,
+    (oe_ocall_func_t) ocall_oe_host_ocall_shutdown,
+    (oe_ocall_func_t) ocall_oe_host_ocall_sockatmark,
+    (oe_ocall_func_t) ocall_oe_host_ocall_isfdtype,
     (oe_ocall_func_t) ocall_host_exit,
     (oe_ocall_func_t) ocall_host_create_thread,
     (oe_ocall_func_t) ocall_host_join_thread,
     (oe_ocall_func_t) ocall_host_detach_thread,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_init,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_destroy,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_getpshared,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_setpshared,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_getclock,
-    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_setclock,
+    (oe_ocall_func_t) ocall_host_cond_timedwait,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_cond_timedwait,
     (oe_ocall_func_t) ocall_oe_host_ocall_pthread_attr_init,
     (oe_ocall_func_t) ocall_oe_host_ocall_pthread_attr_destroy,
     (oe_ocall_func_t) ocall_oe_host_ocall_pthread_attr_setdetachstate,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_init,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_destroy,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_setclock,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_setpshared,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_getclock,
+    (oe_ocall_func_t) ocall_oe_host_ocall_pthread_condattr_getpshared,
     (oe_ocall_func_t) ocall_oe_host_ocall_eventfd,
     (oe_ocall_func_t) ocall_oe_host_ocall_eventfd_read,
     (oe_ocall_func_t) ocall_oe_host_ocall_eventfd_write,
+    (oe_ocall_func_t) ocall_oe_host_ocall_htonl,
+    (oe_ocall_func_t) ocall_oe_host_ocall_htons,
+    (oe_ocall_func_t) ocall_oe_host_ocall_ntohl,
+    (oe_ocall_func_t) ocall_oe_host_ocall_ntohs,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_addr,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_network,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_ntoa,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_pton,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_ntop,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_aton,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_makeaddr,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_lnaof,
+    (oe_ocall_func_t) ocall_oe_host_ocall_inet_netof,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getaddrinfo,
+    (oe_ocall_func_t) ocall_oe_host_ocall_freeaddrinfo,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getnameinfo,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gai_strerror,
+    (oe_ocall_func_t) ocall_oe_host_ocall_sethostent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_endhostent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_setnetent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_endnetent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getnetent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getnetbyaddr,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getnetbyname,
+    (oe_ocall_func_t) ocall_oe_host_ocall_setservent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_endservent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getservent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getservbyname,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getservbyport,
+    (oe_ocall_func_t) ocall_oe_host_ocall_setprotoent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_endprotoent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getprotoent,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getprotobyname,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getprotobynumber,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyname,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyaddr,
+    (oe_ocall_func_t) ocall_oe_host_ocall___h_errno_location,
+    (oe_ocall_func_t) ocall_oe_host_ocall_herror,
+    (oe_ocall_func_t) ocall_oe_host_ocall_hstrerror,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyname_r,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyname2_r,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyname2,
+    (oe_ocall_func_t) ocall_oe_host_ocall_gethostbyaddr_r,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getservbyport_r,
+    (oe_ocall_func_t) ocall_oe_host_ocall_getservbyname_r,
+    (oe_ocall_func_t) ocall_oe_host_ocall_epoll_create,
+    (oe_ocall_func_t) ocall_oe_host_ocall_epoll_create1,
+    (oe_ocall_func_t) ocall_oe_host_ocall_epoll_ctl,
+    (oe_ocall_func_t) ocall_oe_host_ocall_epoll_wait,
+    (oe_ocall_func_t) ocall_oe_host_ocall_epoll_pwait,
+    (oe_ocall_func_t) ocall_oe_host_ocall_creat,
+    (oe_ocall_func_t) ocall_oe_host_ocall_fcntl,
+    (oe_ocall_func_t) ocall_oe_host_ocall_open,
+    (oe_ocall_func_t) ocall_oe_host_ocall_openat,
+    (oe_ocall_func_t) ocall_oe_host_ocall_posix_fadvise,
+    (oe_ocall_func_t) ocall_oe_host_ocall_posix_fallocate,
+    (oe_ocall_func_t) ocall_oe_host_ocall_lockf,
     NULL
 };
 
@@ -1858,7 +4420,7 @@ oe_result_t oe_create_helloworld_enclave(const char* path,
                config,
                config_size,
                __helloworld_ocall_function_table,
-               36,
+               95,
                enclave);
 }
 

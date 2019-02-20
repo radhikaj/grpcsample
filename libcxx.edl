@@ -25,5 +25,10 @@ enclave {
 
         int host_detach_thread(
             uint64_t enc_key);
+
+        int host_cond_timedwait(
+             [user_check]pthread_cond_t * cond,
+             [user_check]pthread_mutex_t * mutex,
+             [user_check]const struct timespec * abstime);
     };
 };

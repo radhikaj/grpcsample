@@ -9,82 +9,22 @@
 
 #include <openenclave/bits/result.h>
 
-#include "openenclave/bits/sockettypes.h"
-#include "openenclave/bits/timetypes.h"
+#include "sys/socket.h"
+#include "socket_types.h"
 #include "pthread.h"
 #include "pthread_types.h"
 #include "sys/eventfd.h"
 #include "eventfd_types.h"
+#include "arpa/inet.h"
+#include "inet_types.h"
+#include "netdb.h"
+#include "netdb_types.h"
+#include "sys/epoll.h"
+#include "epoll_types.h"
+#include "fcntl.h"
+#include "fcntl_types.h"
 
 /* User types specified in edl */
-typedef struct accept_Result {
-    oe_socket_error_t error;
-    intptr_t hNewSocket;
-    int addrlen;
-    char addr[256];
-} accept_Result;
-
-typedef struct addrinfo_Buffer {
-    int ai_flags;
-    int ai_family;
-    int ai_socktype;
-    int ai_protocol;
-    int ai_addrlen;
-    char ai_canonname[256];
-    char ai_addr[256];
-} addrinfo_Buffer;
-
-typedef struct gethostname_Result {
-    oe_socket_error_t error;
-    char name[256];
-} gethostname_Result;
-
-typedef struct getnameinfo_Result {
-    oe_socket_error_t error;
-    char host[256];
-    char serv[256];
-} getnameinfo_Result;
-
-typedef struct GetSockName_Result {
-    oe_socket_error_t error;
-    int addrlen;
-    char addr[256];
-} GetSockName_Result;
-
-typedef struct getsockopt_Result {
-    oe_socket_error_t error;
-    char buffer[256];
-    int len;
-} getsockopt_Result;
-
-typedef struct ioctlsocket_Result {
-    oe_socket_error_t error;
-    unsigned int outputValue;
-} ioctlsocket_Result;
-
-typedef struct oe_fd_set_internal {
-    unsigned int fd_count;
-    intptr_t fd_array[64];
-} oe_fd_set_internal;
-
-typedef struct select_Result {
-    oe_socket_error_t error;
-    int socketsSet;
-    oe_fd_set_internal readFds;
-    oe_fd_set_internal writeFds;
-    oe_fd_set_internal exceptFds;
-} select_Result;
-
-typedef struct send_Result {
-    oe_socket_error_t error;
-    int bytesSent;
-} send_Result;
-
-typedef struct socket_Result {
-    oe_socket_error_t error;
-    intptr_t hSocket;
-} socket_Result;
-
 typedef enum string_limit {
     STRLEN = 1024} string_limit;
 
@@ -99,174 +39,189 @@ typedef struct _ecall_run_args_t {
     oe_result_t _result;
  } ecall_run_args_t;
 
-typedef struct _ecall_InitializeSockets_args_t {
-    oe_result_t _result;
- } ecall_InitializeSockets_args_t;
-
 typedef struct _enc_enclave_thread_args_t {
 	uint64_t enc_key;
     oe_result_t _result;
  } enc_enclave_thread_args_t;
 
-typedef struct _ocall_accept_args_t {
-	accept_Result _retval;
-	intptr_t a_hSocket;
-	int a_nAddrLen;
+typedef struct _oe_host_ocall_socket_args_t {
+	oe_socket_result_t _retval;
+	int a;
+	int b;
+	int c;
     oe_result_t _result;
- } ocall_accept_args_t;
+ } oe_host_ocall_socket_args_t;
 
-typedef struct _ocall_bind_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
-	void* a_Name;
-	int a_nNameLen;
+typedef struct _oe_host_ocall_socketpair_args_t {
+	oe_socketpair_result_t _retval;
+	int a;
+	int b;
+	int c;
+	int* d;
     oe_result_t _result;
- } ocall_bind_args_t;
+ } oe_host_ocall_socketpair_args_t;
 
-typedef struct _ocall_closesocket_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
+typedef struct _oe_host_ocall_bind_args_t {
+	oe_bind_result_t _retval;
+	int a;
+	struct sockaddr* b;
+	socklen_t c;
     oe_result_t _result;
- } ocall_closesocket_args_t;
+ } oe_host_ocall_bind_args_t;
 
-typedef struct _ocall_connect_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
-	void* a_Name;
-	int a_nNameLen;
+typedef struct _oe_host_ocall_getsockname_args_t {
+	oe_getsockname_result_t _retval;
+	int a;
+	struct sockaddr* b;
+	socklen_t c_;
+	socklen_t* c;
     oe_result_t _result;
- } ocall_connect_args_t;
+ } oe_host_ocall_getsockname_args_t;
 
-typedef struct _ocall_getaddrinfo_args_t {
-	int _retval;
-	char* a_NodeName;
-	size_t a_NodeName_len;
-	char* a_ServiceName;
-	size_t a_ServiceName_len;
-	int a_Flags;
-	int a_Family;
-	int a_SockType;
-	int a_Protocol;
-	addrinfo_Buffer* buf;
-	size_t len;
-	size_t* length_needed;
+typedef struct _oe_host_ocall_connect_args_t {
+	oe_connect_result_t _retval;
+	int a;
+	struct sockaddr* b;
+	socklen_t c;
     oe_result_t _result;
- } ocall_getaddrinfo_args_t;
+ } oe_host_ocall_connect_args_t;
 
-typedef struct _ocall_gethostname_args_t {
-	gethostname_Result _retval;
+typedef struct _oe_host_ocall_getpeername_args_t {
+	oe_getpeername_result_t _retval;
+	int a;
+	struct sockaddr* b;
+	socklen_t c_;
+	socklen_t* c;
     oe_result_t _result;
- } ocall_gethostname_args_t;
+ } oe_host_ocall_getpeername_args_t;
 
-typedef struct _ocall_getnameinfo_args_t {
-	getnameinfo_Result _retval;
-	void* a_Addr;
-	int a_AddrLen;
-	int a_Flags;
+typedef struct _oe_host_ocall_send_args_t {
+	oe_send_result_t _retval;
+	int a;
+	void* b;
+	int c;
+	int d;
     oe_result_t _result;
- } ocall_getnameinfo_args_t;
+ } oe_host_ocall_send_args_t;
 
-typedef struct _ocall_getpeername_args_t {
-	GetSockName_Result _retval;
-	intptr_t a_hSocket;
-	int a_nNameLen;
+typedef struct _oe_host_ocall_recv_args_t {
+	oe_recv_result_t _retval;
+	int a;
+	void* b;
+	int c;
+	int d;
     oe_result_t _result;
- } ocall_getpeername_args_t;
+ } oe_host_ocall_recv_args_t;
 
-typedef struct _ocall_getsockname_args_t {
-	GetSockName_Result _retval;
-	intptr_t a_hSocket;
-	int a_nNameLen;
+typedef struct _oe_host_ocall_sendto_args_t {
+	oe_sendto_result_t _retval;
+	int a;
+	void* b;
+	int c;
+	int d;
+	struct sockaddr* e;
+	socklen_t f;
     oe_result_t _result;
- } ocall_getsockname_args_t;
+ } oe_host_ocall_sendto_args_t;
 
-typedef struct _ocall_getsockopt_args_t {
-	getsockopt_Result _retval;
-	intptr_t a_hSocket;
-	int a_nLevel;
-	int a_nOptName;
-	int a_nOptLen;
+typedef struct _oe_host_ocall_recvfrom_args_t {
+	oe_recvfrom_result_t _retval;
+	int a;
+	void* b;
+	int c;
+	int d;
+	struct sockaddr* e;
+	socklen_t f_;
+	socklen_t* f;
     oe_result_t _result;
- } ocall_getsockopt_args_t;
+ } oe_host_ocall_recvfrom_args_t;
 
-typedef struct _ocall_ioctlsocket_args_t {
-	ioctlsocket_Result _retval;
-	intptr_t a_hSocket;
-	int a_nCommand;
-	unsigned int a_uInputValue;
+typedef struct _oe_host_ocall_sendmsg_args_t {
+	oe_sendmsg_result_t _retval;
+	int a;
+	struct msghdr* b;
+	int c;
+	void* iov_base;
+	int c2;
+	struct iovec* iov;
+	int numiov;
     oe_result_t _result;
- } ocall_ioctlsocket_args_t;
+ } oe_host_ocall_sendmsg_args_t;
 
-typedef struct _ocall_listen_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
-	int a_nMaxConnections;
+typedef struct _oe_host_ocall_recvmsg_args_t {
+	oe_recvmsg_result_t _retval;
+	int a;
+	int msg_iovlen;
+	int* flags;
+	void* name;
+	int namelen;
+	int* actualnamelen;
+	void* control;
+	int controllen;
+	int* actualcontrollen;
+	int c;
+	void* iov;
+	int c2;
+	int* actualiovlen;
     oe_result_t _result;
- } ocall_listen_args_t;
+ } oe_host_ocall_recvmsg_args_t;
 
-typedef struct _ocall_recv_args_t {
-	ssize_t _retval;
-	intptr_t s;
-	void* buf;
-	size_t len;
-	int flags;
-	oe_socket_error_t* error;
+typedef struct _oe_host_ocall_getsockopt_args_t {
+	oe_getsockopt_result_t _retval;
+	int a;
+	int b;
+	int c;
+	void* d;
+	socklen_t e_;
+	socklen_t* e;
     oe_result_t _result;
- } ocall_recv_args_t;
+ } oe_host_ocall_getsockopt_args_t;
 
-typedef struct _ocall_select_args_t {
-	select_Result _retval;
-	int a_nFds;
-	oe_fd_set_internal a_ReadFds;
-	oe_fd_set_internal a_WriteFds;
-	oe_fd_set_internal a_ExceptFds;
-	struct timeval a_Timeval;
+typedef struct _oe_host_ocall_setsockopt_args_t {
+	oe_setsockopt_result_t _retval;
+	int a;
+	int b;
+	int c;
+	void* d;
+	socklen_t e;
     oe_result_t _result;
- } ocall_select_args_t;
+ } oe_host_ocall_setsockopt_args_t;
 
-typedef struct _ocall_send_args_t {
-	send_Result _retval;
-	intptr_t a_hSocket;
-	void* a_Message;
-	size_t a_nMessageLen;
-	int a_Flags;
+typedef struct _oe_host_ocall_listen_args_t {
+	oe_listen_result_t _retval;
+	int a;
+	int b;
     oe_result_t _result;
- } ocall_send_args_t;
+ } oe_host_ocall_listen_args_t;
 
-typedef struct _ocall_setsockopt_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
-	int a_nLevel;
-	int a_nOptName;
-	void* a_OptVal;
-	int a_nOptLen;
+typedef struct _oe_host_ocall_accept_args_t {
+	oe_accept_result_t _retval;
+	int a;
+	struct sockaddr* b;
+	socklen_t c_;
+	socklen_t* c;
     oe_result_t _result;
- } ocall_setsockopt_args_t;
+ } oe_host_ocall_accept_args_t;
 
-typedef struct _ocall_shutdown_args_t {
-	oe_socket_error_t _retval;
-	intptr_t a_hSocket;
-	oe_shutdown_how_t a_How;
+typedef struct _oe_host_ocall_shutdown_args_t {
+	oe_shutdown_result_t _retval;
+	int a;
+	int b;
     oe_result_t _result;
- } ocall_shutdown_args_t;
+ } oe_host_ocall_shutdown_args_t;
 
-typedef struct _ocall_socket_args_t {
-	socket_Result _retval;
-	oe_socket_address_family_t a_AddressFamily;
-	oe_socket_type_t a_Type;
-	int a_Protocol;
+typedef struct _oe_host_ocall_sockatmark_args_t {
+	oe_sockatmark_result_t _retval;
+	int a;
     oe_result_t _result;
- } ocall_socket_args_t;
+ } oe_host_ocall_sockatmark_args_t;
 
-typedef struct _ocall_WSACleanup_args_t {
-	oe_socket_error_t _retval;
+typedef struct _oe_host_ocall_isfdtype_args_t {
+	oe_isfdtype_result_t _retval;
+	int a;
+	int b;
     oe_result_t _result;
- } ocall_WSACleanup_args_t;
-
-typedef struct _ocall_WSAStartup_args_t {
-	oe_socket_error_t _retval;
-    oe_result_t _result;
- } ocall_WSAStartup_args_t;
+ } oe_host_ocall_isfdtype_args_t;
 
 typedef struct _host_exit_args_t {
 	int arg;
@@ -291,45 +246,21 @@ typedef struct _host_detach_thread_args_t {
     oe_result_t _result;
  } host_detach_thread_args_t;
 
-typedef struct _oe_host_ocall_pthread_condattr_init_args_t {
-	oe_pthread_condattr_init_result_t _retval;
-	pthread_condattr_t* a;
+typedef struct _host_cond_timedwait_args_t {
+	int _retval;
+	pthread_cond_t* cond;
+	pthread_mutex_t* mutex;
+	struct timespec* abstime;
     oe_result_t _result;
- } oe_host_ocall_pthread_condattr_init_args_t;
+ } host_cond_timedwait_args_t;
 
-typedef struct _oe_host_ocall_pthread_condattr_destroy_args_t {
-	oe_pthread_condattr_destroy_result_t _retval;
-	pthread_condattr_t* a;
+typedef struct _oe_host_ocall_pthread_cond_timedwait_args_t {
+	oe_pthread_cond_timedwait_result_t _retval;
+	pthread_cond_t* a;
+	pthread_mutex_t* b;
+	struct timespec* c;
     oe_result_t _result;
- } oe_host_ocall_pthread_condattr_destroy_args_t;
-
-typedef struct _oe_host_ocall_pthread_condattr_getpshared_args_t {
-	oe_pthread_condattr_getpshared_result_t _retval;
-	pthread_condattr_t* a;
-	int* b;
-    oe_result_t _result;
- } oe_host_ocall_pthread_condattr_getpshared_args_t;
-
-typedef struct _oe_host_ocall_pthread_condattr_setpshared_args_t {
-	oe_pthread_condattr_setpshared_result_t _retval;
-	pthread_condattr_t* a;
-	int b;
-    oe_result_t _result;
- } oe_host_ocall_pthread_condattr_setpshared_args_t;
-
-typedef struct _oe_host_ocall_pthread_condattr_getclock_args_t {
-	oe_pthread_condattr_getclock_result_t _retval;
-	pthread_condattr_t* a;
-	clockid_t* b;
-    oe_result_t _result;
- } oe_host_ocall_pthread_condattr_getclock_args_t;
-
-typedef struct _oe_host_ocall_pthread_condattr_setclock_args_t {
-	oe_pthread_condattr_setclock_result_t _retval;
-	pthread_condattr_t* a;
-	clockid_t b;
-    oe_result_t _result;
- } oe_host_ocall_pthread_condattr_setclock_args_t;
+ } oe_host_ocall_pthread_cond_timedwait_args_t;
 
 typedef struct _oe_host_ocall_pthread_attr_init_args_t {
 	oe_pthread_attr_init_result_t _retval;
@@ -349,6 +280,46 @@ typedef struct _oe_host_ocall_pthread_attr_setdetachstate_args_t {
 	int b;
     oe_result_t _result;
  } oe_host_ocall_pthread_attr_setdetachstate_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_init_args_t {
+	oe_pthread_condattr_init_result_t _retval;
+	pthread_condattr_t* a;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_init_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_destroy_args_t {
+	oe_pthread_condattr_destroy_result_t _retval;
+	pthread_condattr_t* a;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_destroy_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_setclock_args_t {
+	oe_pthread_condattr_setclock_result_t _retval;
+	pthread_condattr_t* a;
+	clockid_t b;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_setclock_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_setpshared_args_t {
+	oe_pthread_condattr_setpshared_result_t _retval;
+	pthread_condattr_t* a;
+	int b;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_setpshared_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_getclock_args_t {
+	oe_pthread_condattr_getclock_result_t _retval;
+	pthread_condattr_t* a;
+	clockid_t* b;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_getclock_args_t;
+
+typedef struct _oe_host_ocall_pthread_condattr_getpshared_args_t {
+	oe_pthread_condattr_getpshared_result_t _retval;
+	pthread_condattr_t* a;
+	int* b;
+    oe_result_t _result;
+ } oe_host_ocall_pthread_condattr_getpshared_args_t;
 
 typedef struct _oe_host_ocall_eventfd_args_t {
 	oe_eventfd_result_t _retval;
@@ -371,53 +342,547 @@ typedef struct _oe_host_ocall_eventfd_write_args_t {
     oe_result_t _result;
  } oe_host_ocall_eventfd_write_args_t;
 
+typedef struct _oe_host_ocall_htonl_args_t {
+	oe_htonl_result_t _retval;
+	uint32_t a;
+    oe_result_t _result;
+ } oe_host_ocall_htonl_args_t;
+
+typedef struct _oe_host_ocall_htons_args_t {
+	oe_htons_result_t _retval;
+	uint16_t a;
+    oe_result_t _result;
+ } oe_host_ocall_htons_args_t;
+
+typedef struct _oe_host_ocall_ntohl_args_t {
+	oe_ntohl_result_t _retval;
+	uint32_t a;
+    oe_result_t _result;
+ } oe_host_ocall_ntohl_args_t;
+
+typedef struct _oe_host_ocall_ntohs_args_t {
+	oe_ntohs_result_t _retval;
+	uint16_t a;
+    oe_result_t _result;
+ } oe_host_ocall_ntohs_args_t;
+
+typedef struct _oe_host_ocall_inet_addr_args_t {
+	oe_inet_addr_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_inet_addr_args_t;
+
+typedef struct _oe_host_ocall_inet_network_args_t {
+	oe_inet_network_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_inet_network_args_t;
+
+typedef struct _oe_host_ocall_inet_ntoa_args_t {
+	oe_inet_ntoa_result_t _retval;
+	struct in_addr a;
+    oe_result_t _result;
+ } oe_host_ocall_inet_ntoa_args_t;
+
+typedef struct _oe_host_ocall_inet_pton_args_t {
+	oe_inet_pton_result_t _retval;
+	int a;
+	char* b;
+	size_t b_len;
+	void* c;
+	int d;
+    oe_result_t _result;
+ } oe_host_ocall_inet_pton_args_t;
+
+typedef struct _oe_host_ocall_inet_ntop_args_t {
+	oe_inet_ntop_result_t _retval;
+	int a;
+	void* b;
+	int e;
+	char* c;
+	socklen_t d;
+    oe_result_t _result;
+ } oe_host_ocall_inet_ntop_args_t;
+
+typedef struct _oe_host_ocall_inet_aton_args_t {
+	oe_inet_aton_result_t _retval;
+	char* a;
+	size_t a_len;
+	struct in_addr* b;
+    oe_result_t _result;
+ } oe_host_ocall_inet_aton_args_t;
+
+typedef struct _oe_host_ocall_inet_makeaddr_args_t {
+	oe_inet_makeaddr_result_t _retval;
+	in_addr_t a;
+	in_addr_t b;
+    oe_result_t _result;
+ } oe_host_ocall_inet_makeaddr_args_t;
+
+typedef struct _oe_host_ocall_inet_lnaof_args_t {
+	oe_inet_lnaof_result_t _retval;
+	struct in_addr a;
+    oe_result_t _result;
+ } oe_host_ocall_inet_lnaof_args_t;
+
+typedef struct _oe_host_ocall_inet_netof_args_t {
+	oe_inet_netof_result_t _retval;
+	struct in_addr a;
+    oe_result_t _result;
+ } oe_host_ocall_inet_netof_args_t;
+
+typedef struct _oe_host_ocall_getaddrinfo_args_t {
+	oe_getaddrinfo_result_t _retval;
+	char* a;
+	size_t a_len;
+	char* b;
+	size_t b_len;
+	struct addrinfo* c;
+	struct addrinfo** d;
+    oe_result_t _result;
+ } oe_host_ocall_getaddrinfo_args_t;
+
+typedef struct _oe_host_ocall_freeaddrinfo_args_t {
+	oe_freeaddrinfo_result_t _retval;
+	struct addrinfo* a;
+    oe_result_t _result;
+ } oe_host_ocall_freeaddrinfo_args_t;
+
+typedef struct _oe_host_ocall_getnameinfo_args_t {
+	oe_getnameinfo_result_t _retval;
+	struct sockaddr* a;
+	socklen_t b;
+	char* c;
+	socklen_t d;
+	char* e;
+	socklen_t f;
+	int g;
+    oe_result_t _result;
+ } oe_host_ocall_getnameinfo_args_t;
+
+typedef struct _oe_host_ocall_gai_strerror_args_t {
+	oe_gai_strerror_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_gai_strerror_args_t;
+
+typedef struct _oe_host_ocall_sethostent_args_t {
+	oe_sethostent_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_sethostent_args_t;
+
+typedef struct _oe_host_ocall_endhostent_args_t {
+	oe_endhostent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_endhostent_args_t;
+
+typedef struct _oe_host_ocall_gethostent_args_t {
+	oe_gethostent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_gethostent_args_t;
+
+typedef struct _oe_host_ocall_setnetent_args_t {
+	oe_setnetent_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_setnetent_args_t;
+
+typedef struct _oe_host_ocall_endnetent_args_t {
+	oe_endnetent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_endnetent_args_t;
+
+typedef struct _oe_host_ocall_getnetent_args_t {
+	oe_getnetent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_getnetent_args_t;
+
+typedef struct _oe_host_ocall_getnetbyaddr_args_t {
+	oe_getnetbyaddr_result_t _retval;
+	uint32_t a;
+	int b;
+    oe_result_t _result;
+ } oe_host_ocall_getnetbyaddr_args_t;
+
+typedef struct _oe_host_ocall_getnetbyname_args_t {
+	oe_getnetbyname_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_getnetbyname_args_t;
+
+typedef struct _oe_host_ocall_setservent_args_t {
+	oe_setservent_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_setservent_args_t;
+
+typedef struct _oe_host_ocall_endservent_args_t {
+	oe_endservent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_endservent_args_t;
+
+typedef struct _oe_host_ocall_getservent_args_t {
+	oe_getservent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_getservent_args_t;
+
+typedef struct _oe_host_ocall_getservbyname_args_t {
+	oe_getservbyname_result_t _retval;
+	char* a;
+	size_t a_len;
+	char* b;
+	size_t b_len;
+    oe_result_t _result;
+ } oe_host_ocall_getservbyname_args_t;
+
+typedef struct _oe_host_ocall_getservbyport_args_t {
+	oe_getservbyport_result_t _retval;
+	int a;
+	char* b;
+	size_t b_len;
+    oe_result_t _result;
+ } oe_host_ocall_getservbyport_args_t;
+
+typedef struct _oe_host_ocall_setprotoent_args_t {
+	oe_setprotoent_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_setprotoent_args_t;
+
+typedef struct _oe_host_ocall_endprotoent_args_t {
+	oe_endprotoent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_endprotoent_args_t;
+
+typedef struct _oe_host_ocall_getprotoent_args_t {
+	oe_getprotoent_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall_getprotoent_args_t;
+
+typedef struct _oe_host_ocall_getprotobyname_args_t {
+	oe_getprotobyname_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_getprotobyname_args_t;
+
+typedef struct _oe_host_ocall_getprotobynumber_args_t {
+	oe_getprotobynumber_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_getprotobynumber_args_t;
+
+typedef struct _oe_host_ocall_gethostbyname_args_t {
+	oe_gethostbyname_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyname_args_t;
+
+typedef struct _oe_host_ocall_gethostbyaddr_args_t {
+	oe_gethostbyaddr_result_t _retval;
+	void* a;
+	socklen_t b;
+	int c;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyaddr_args_t;
+
+typedef struct _oe_host_ocall___h_errno_location_args_t {
+	oe___h_errno_location_result_t _retval;
+    oe_result_t _result;
+ } oe_host_ocall___h_errno_location_args_t;
+
+typedef struct _oe_host_ocall_herror_args_t {
+	oe_herror_result_t _retval;
+	char* a;
+	size_t a_len;
+    oe_result_t _result;
+ } oe_host_ocall_herror_args_t;
+
+typedef struct _oe_host_ocall_hstrerror_args_t {
+	oe_hstrerror_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_hstrerror_args_t;
+
+typedef struct _oe_host_ocall_gethostbyname_r_args_t {
+	oe_gethostbyname_r_result_t _retval;
+	char* a;
+	size_t a_len;
+	struct hostent* b;
+	char* c;
+	size_t d;
+	struct hostent** e;
+	int* f;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyname_r_args_t;
+
+typedef struct _oe_host_ocall_gethostbyname2_r_args_t {
+	oe_gethostbyname2_r_result_t _retval;
+	char* a;
+	size_t a_len;
+	int b;
+	struct hostent* c;
+	char* d;
+	size_t e;
+	struct hostent** f;
+	int* g;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyname2_r_args_t;
+
+typedef struct _oe_host_ocall_gethostbyname2_args_t {
+	oe_gethostbyname2_result_t _retval;
+	char* a;
+	size_t a_len;
+	int b;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyname2_args_t;
+
+typedef struct _oe_host_ocall_gethostbyaddr_r_args_t {
+	oe_gethostbyaddr_r_result_t _retval;
+	void* a;
+	socklen_t b;
+	int c;
+	struct hostent* d;
+	char* e;
+	size_t f;
+	struct hostent** g;
+	int* h;
+    oe_result_t _result;
+ } oe_host_ocall_gethostbyaddr_r_args_t;
+
+typedef struct _oe_host_ocall_getservbyport_r_args_t {
+	oe_getservbyport_r_result_t _retval;
+	int a;
+	char* b;
+	size_t b_len;
+	struct servent* c;
+	char* d;
+	size_t e;
+	struct servent** f;
+    oe_result_t _result;
+ } oe_host_ocall_getservbyport_r_args_t;
+
+typedef struct _oe_host_ocall_getservbyname_r_args_t {
+	oe_getservbyname_r_result_t _retval;
+	char* a;
+	size_t a_len;
+	char* b;
+	size_t b_len;
+	struct servent* c;
+	char* d;
+	size_t e;
+	struct servent** f;
+    oe_result_t _result;
+ } oe_host_ocall_getservbyname_r_args_t;
+
+typedef struct _oe_host_ocall_epoll_create_args_t {
+	oe_epoll_create_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_epoll_create_args_t;
+
+typedef struct _oe_host_ocall_epoll_create1_args_t {
+	oe_epoll_create1_result_t _retval;
+	int a;
+    oe_result_t _result;
+ } oe_host_ocall_epoll_create1_args_t;
+
+typedef struct _oe_host_ocall_epoll_ctl_args_t {
+	oe_epoll_ctl_result_t _retval;
+	int a;
+	int b;
+	int c;
+	struct epoll_event* d;
+    oe_result_t _result;
+ } oe_host_ocall_epoll_ctl_args_t;
+
+typedef struct _oe_host_ocall_epoll_wait_args_t {
+	oe_epoll_wait_result_t _retval;
+	int a;
+	struct epoll_event* b;
+	int c;
+	int d;
+    oe_result_t _result;
+ } oe_host_ocall_epoll_wait_args_t;
+
+typedef struct _oe_host_ocall_epoll_pwait_args_t {
+	oe_epoll_pwait_result_t _retval;
+	int a;
+	struct epoll_event* b;
+	int c;
+	int d;
+	sigset_t* e;
+    oe_result_t _result;
+ } oe_host_ocall_epoll_pwait_args_t;
+
+typedef struct _oe_host_ocall_creat_args_t {
+	oe_creat_result_t _retval;
+	char* a;
+	size_t a_len;
+	mode_t b;
+    oe_result_t _result;
+ } oe_host_ocall_creat_args_t;
+
+typedef struct _oe_host_ocall_fcntl_args_t {
+	oe_fcntl_result_t _retval;
+	int a;
+	int b;
+	int64_t c;
+    oe_result_t _result;
+ } oe_host_ocall_fcntl_args_t;
+
+typedef struct _oe_host_ocall_open_args_t {
+	oe_open_result_t _retval;
+	char* a;
+	size_t a_len;
+	int b;
+    oe_result_t _result;
+ } oe_host_ocall_open_args_t;
+
+typedef struct _oe_host_ocall_openat_args_t {
+	oe_openat_result_t _retval;
+	int a;
+	char* b;
+	size_t b_len;
+	int c;
+    oe_result_t _result;
+ } oe_host_ocall_openat_args_t;
+
+typedef struct _oe_host_ocall_posix_fadvise_args_t {
+	oe_posix_fadvise_result_t _retval;
+	int a;
+	off_t b;
+	off_t c;
+	int d;
+    oe_result_t _result;
+ } oe_host_ocall_posix_fadvise_args_t;
+
+typedef struct _oe_host_ocall_posix_fallocate_args_t {
+	oe_posix_fallocate_result_t _retval;
+	int a;
+	off_t b;
+	off_t c;
+    oe_result_t _result;
+ } oe_host_ocall_posix_fallocate_args_t;
+
+typedef struct _oe_host_ocall_lockf_args_t {
+	oe_lockf_result_t _retval;
+	int a;
+	int b;
+	off_t c;
+    oe_result_t _result;
+ } oe_host_ocall_lockf_args_t;
+
 /* trusted function ids */
 enum {
     fcn_id_ecall_run = 0,
-    fcn_id_ecall_InitializeSockets = 1,
-    fcn_id_enc_enclave_thread = 2,
+    fcn_id_enc_enclave_thread = 1,
     fcn_id_trusted_call_id_max = OE_ENUM_MAX
 };
 
 
 /* untrusted function ids */
 enum {
-    fcn_id_ocall_accept = 0,
-    fcn_id_ocall_bind = 1,
-    fcn_id_ocall_closesocket = 2,
-    fcn_id_ocall_connect = 3,
-    fcn_id_ocall_getaddrinfo = 4,
-    fcn_id_ocall_gethostname = 5,
-    fcn_id_ocall_getnameinfo = 6,
-    fcn_id_ocall_getpeername = 7,
-    fcn_id_ocall_getsockname = 8,
-    fcn_id_ocall_getsockopt = 9,
-    fcn_id_ocall_ioctlsocket = 10,
-    fcn_id_ocall_listen = 11,
-    fcn_id_ocall_recv = 12,
-    fcn_id_ocall_select = 13,
-    fcn_id_ocall_send = 14,
-    fcn_id_ocall_setsockopt = 15,
-    fcn_id_ocall_shutdown = 16,
-    fcn_id_ocall_socket = 17,
-    fcn_id_ocall_WSACleanup = 18,
-    fcn_id_ocall_WSAStartup = 19,
-    fcn_id_host_exit = 20,
-    fcn_id_host_create_thread = 21,
-    fcn_id_host_join_thread = 22,
-    fcn_id_host_detach_thread = 23,
-    fcn_id_oe_host_ocall_pthread_condattr_init = 24,
-    fcn_id_oe_host_ocall_pthread_condattr_destroy = 25,
-    fcn_id_oe_host_ocall_pthread_condattr_getpshared = 26,
-    fcn_id_oe_host_ocall_pthread_condattr_setpshared = 27,
-    fcn_id_oe_host_ocall_pthread_condattr_getclock = 28,
-    fcn_id_oe_host_ocall_pthread_condattr_setclock = 29,
-    fcn_id_oe_host_ocall_pthread_attr_init = 30,
-    fcn_id_oe_host_ocall_pthread_attr_destroy = 31,
-    fcn_id_oe_host_ocall_pthread_attr_setdetachstate = 32,
-    fcn_id_oe_host_ocall_eventfd = 33,
-    fcn_id_oe_host_ocall_eventfd_read = 34,
-    fcn_id_oe_host_ocall_eventfd_write = 35,
+    fcn_id_oe_host_ocall_socket = 0,
+    fcn_id_oe_host_ocall_socketpair = 1,
+    fcn_id_oe_host_ocall_bind = 2,
+    fcn_id_oe_host_ocall_getsockname = 3,
+    fcn_id_oe_host_ocall_connect = 4,
+    fcn_id_oe_host_ocall_getpeername = 5,
+    fcn_id_oe_host_ocall_send = 6,
+    fcn_id_oe_host_ocall_recv = 7,
+    fcn_id_oe_host_ocall_sendto = 8,
+    fcn_id_oe_host_ocall_recvfrom = 9,
+    fcn_id_oe_host_ocall_sendmsg = 10,
+    fcn_id_oe_host_ocall_recvmsg = 11,
+    fcn_id_oe_host_ocall_getsockopt = 12,
+    fcn_id_oe_host_ocall_setsockopt = 13,
+    fcn_id_oe_host_ocall_listen = 14,
+    fcn_id_oe_host_ocall_accept = 15,
+    fcn_id_oe_host_ocall_shutdown = 16,
+    fcn_id_oe_host_ocall_sockatmark = 17,
+    fcn_id_oe_host_ocall_isfdtype = 18,
+    fcn_id_host_exit = 19,
+    fcn_id_host_create_thread = 20,
+    fcn_id_host_join_thread = 21,
+    fcn_id_host_detach_thread = 22,
+    fcn_id_host_cond_timedwait = 23,
+    fcn_id_oe_host_ocall_pthread_cond_timedwait = 24,
+    fcn_id_oe_host_ocall_pthread_attr_init = 25,
+    fcn_id_oe_host_ocall_pthread_attr_destroy = 26,
+    fcn_id_oe_host_ocall_pthread_attr_setdetachstate = 27,
+    fcn_id_oe_host_ocall_pthread_condattr_init = 28,
+    fcn_id_oe_host_ocall_pthread_condattr_destroy = 29,
+    fcn_id_oe_host_ocall_pthread_condattr_setclock = 30,
+    fcn_id_oe_host_ocall_pthread_condattr_setpshared = 31,
+    fcn_id_oe_host_ocall_pthread_condattr_getclock = 32,
+    fcn_id_oe_host_ocall_pthread_condattr_getpshared = 33,
+    fcn_id_oe_host_ocall_eventfd = 34,
+    fcn_id_oe_host_ocall_eventfd_read = 35,
+    fcn_id_oe_host_ocall_eventfd_write = 36,
+    fcn_id_oe_host_ocall_htonl = 37,
+    fcn_id_oe_host_ocall_htons = 38,
+    fcn_id_oe_host_ocall_ntohl = 39,
+    fcn_id_oe_host_ocall_ntohs = 40,
+    fcn_id_oe_host_ocall_inet_addr = 41,
+    fcn_id_oe_host_ocall_inet_network = 42,
+    fcn_id_oe_host_ocall_inet_ntoa = 43,
+    fcn_id_oe_host_ocall_inet_pton = 44,
+    fcn_id_oe_host_ocall_inet_ntop = 45,
+    fcn_id_oe_host_ocall_inet_aton = 46,
+    fcn_id_oe_host_ocall_inet_makeaddr = 47,
+    fcn_id_oe_host_ocall_inet_lnaof = 48,
+    fcn_id_oe_host_ocall_inet_netof = 49,
+    fcn_id_oe_host_ocall_getaddrinfo = 50,
+    fcn_id_oe_host_ocall_freeaddrinfo = 51,
+    fcn_id_oe_host_ocall_getnameinfo = 52,
+    fcn_id_oe_host_ocall_gai_strerror = 53,
+    fcn_id_oe_host_ocall_sethostent = 54,
+    fcn_id_oe_host_ocall_endhostent = 55,
+    fcn_id_oe_host_ocall_gethostent = 56,
+    fcn_id_oe_host_ocall_setnetent = 57,
+    fcn_id_oe_host_ocall_endnetent = 58,
+    fcn_id_oe_host_ocall_getnetent = 59,
+    fcn_id_oe_host_ocall_getnetbyaddr = 60,
+    fcn_id_oe_host_ocall_getnetbyname = 61,
+    fcn_id_oe_host_ocall_setservent = 62,
+    fcn_id_oe_host_ocall_endservent = 63,
+    fcn_id_oe_host_ocall_getservent = 64,
+    fcn_id_oe_host_ocall_getservbyname = 65,
+    fcn_id_oe_host_ocall_getservbyport = 66,
+    fcn_id_oe_host_ocall_setprotoent = 67,
+    fcn_id_oe_host_ocall_endprotoent = 68,
+    fcn_id_oe_host_ocall_getprotoent = 69,
+    fcn_id_oe_host_ocall_getprotobyname = 70,
+    fcn_id_oe_host_ocall_getprotobynumber = 71,
+    fcn_id_oe_host_ocall_gethostbyname = 72,
+    fcn_id_oe_host_ocall_gethostbyaddr = 73,
+    fcn_id_oe_host_ocall___h_errno_location = 74,
+    fcn_id_oe_host_ocall_herror = 75,
+    fcn_id_oe_host_ocall_hstrerror = 76,
+    fcn_id_oe_host_ocall_gethostbyname_r = 77,
+    fcn_id_oe_host_ocall_gethostbyname2_r = 78,
+    fcn_id_oe_host_ocall_gethostbyname2 = 79,
+    fcn_id_oe_host_ocall_gethostbyaddr_r = 80,
+    fcn_id_oe_host_ocall_getservbyport_r = 81,
+    fcn_id_oe_host_ocall_getservbyname_r = 82,
+    fcn_id_oe_host_ocall_epoll_create = 83,
+    fcn_id_oe_host_ocall_epoll_create1 = 84,
+    fcn_id_oe_host_ocall_epoll_ctl = 85,
+    fcn_id_oe_host_ocall_epoll_wait = 86,
+    fcn_id_oe_host_ocall_epoll_pwait = 87,
+    fcn_id_oe_host_ocall_creat = 88,
+    fcn_id_oe_host_ocall_fcntl = 89,
+    fcn_id_oe_host_ocall_open = 90,
+    fcn_id_oe_host_ocall_openat = 91,
+    fcn_id_oe_host_ocall_posix_fadvise = 92,
+    fcn_id_oe_host_ocall_posix_fallocate = 93,
+    fcn_id_oe_host_ocall_lockf = 94,
     fcn_id_untrusted_call_max = OE_ENUM_MAX
 };
 

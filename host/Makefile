@@ -26,10 +26,10 @@ build:
 	@ echo "Compilers used: $(CC), $(CXX)"
 	oeedger8r ../helloworld.edl --untrusted
 	/usr/local/bin/protoc -I../ ../hello.proto --cpp_out=.
-	$(CXX) -c  -g $(CXXFLAGS) -I/home/azureuser/oe/include -std=c++11 host.cpp hostthreads.cpp pthread_host.c eventfd_host.c
+	$(CXX) -c  -g $(CXXFLAGS) -I/home/azureuser/oe/include -std=c++11 host.cpp hostthreads.cpp pthread_host.c eventfd_host.c socket_host.c inet_host.c netdb_host.c epoll_host.c fcntl_host.c
 	$(CC) -c -g $(CFLAGS) helloworld_u.c
 	$(CXX) -c -g $(CXXFLAGS) -std=c++11 hello.pb.cc
-	$(CXX) -o helloworldhost hostthreads.o host.o pthread_host.o eventfd_host.o helloworld_u.o hello.pb.o  $(LDFLAGS) -Wl,--no-undefined -L/usr/local/lib -lprotobuf -pthread -loesocket_host -g
+	$(CXX) -o helloworldhost hostthreads.o host.o pthread_host.o eventfd_host.o socket_host.o inet_host.o netdb_host.o epoll_host.o fcntl_host.o  helloworld_u.o hello.pb.o  $(LDFLAGS) -Wl,--no-undefined -L/usr/local/lib -lprotobuf -pthread -g
 
 clean:
 	rm -f file-encryptorhost fileencryptor_u.* fileencryptor_args.h *.o ../out.decrypted ../out.encrypted

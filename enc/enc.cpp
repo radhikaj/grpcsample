@@ -87,6 +87,9 @@ typedef struct _oe_pthread_hooks
     int (*join)(pthread_t thread, void** retval);
 
     int (*detach)(pthread_t thread);
+    int (* cond_timedwait)(pthread_cond_t * cond,
+       pthread_mutex_t *mutex,
+       const struct timespec *abstime);
 } oe_pthread_hooks_t;
 
 void oe_register_pthread_hooks(oe_pthread_hooks_t* pthread_hooks);
@@ -170,6 +173,22 @@ static int _pthread_create_hook(
         *enc_thread);
 
     return 0;
+}
+
+static int _pthread_cond_timedwait(pthread_cond_t * cond,
+       pthread_mutex_t * mutex,
+       const struct timespec * abstime)
+{
+    int cond_timedwait_ret = 0;
+    /*if (host_cond_timedwait(&cond_timedwait_ret, cond, mutex, abstime) != OE_OK)
+    {
+        printf(
+            "_pthread_cond_timedwait(): Error in call to host  host_pthread_cond_timedwait ");
+            
+        oe_abort();
+    }*/
+
+    return cond_timedwait_ret;
 }
 
 static int _pthread_join_hook(pthread_t enc_thread, void**)
@@ -304,7 +323,8 @@ void  setuphooks()
 {
     static oe_pthread_hooks_t _hooks = {.create = _pthread_create_hook,
                                         .join = _pthread_join_hook,
-                                        .detach = _pthread_detach_hook};
+                                        .detach = _pthread_detach_hook,
+                                        .cond_timedwait = _pthread_cond_timedwait};
     
     oe_register_pthread_hooks(&_hooks);
 }
@@ -322,20 +342,20 @@ extern "C"
   #include <sys/socket.h>
        #include <netinet/in.h>
        #include <arpa/inet.h>
+
        int pipe(int pipefd[2])
        {
-       return 0;
-       }
-       int socketpair(int domain, int type, int protocol, int sv[2])
-       {
+       printf("***************pipe called\n");
        return 0;
        }
         int gethostname(char *name, size_t len)
         {
+        printf("***************gethostname called\n");
         return 0;
         }
         ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
         {
+        printf("***************writev called\n");
         return 0;
         }
         
@@ -343,64 +363,38 @@ extern "C"
        int flags, struct sockaddr *__restrict address,
        socklen_t *__restrict address_len)
        {
+       printf("***************recvfrom called\n");
        return 0;
        }
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
+printf("***************poll called\n");
   return 0;
 }
-
-int epoll_create(int size);int epoll_create1(int flags)
-{
-  return 0;
-}
-
-int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
-{
-  return 0;
-}
-int epoll_wait(int epfd, struct epoll_event *events,
-              int maxevents, int timeout)
-              {
-                return 0;
-              }
-                      
-                       
-
 
 
 ssize_t read(int fd, void *buf, size_t count)
 {
+printf("***************read called\n");
   return 0;
 }
 
        off_t lseek(int fd, off_t offset, int whence)
        {
+       printf("***************lseek called\n");
          return 0;
        }
 
    ssize_t write(int fd, const void *buf, size_t count)
    {
+   printf("***************wrie called\n");
      return 0;
    }
   
-  const char *gai_strerror(int ecode)
-  {
-    abort();
-    return nullptr;
-  }
 
-  ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags)
-  {
-    return 0;
-  }
-
-  ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags)
-  {
-    return 0;
-  }
  int getifaddrs(struct ifaddrs **ifap)
  {
+ printf("***************getifaddrs called\n");
    return 0;
  }
 
@@ -408,29 +402,9 @@ ssize_t read(int fd, void *buf, size_t count)
        {
          return ;
        }
-int fcntl(int fd, int cmd, ... /* arg */ )
-{
-  return 0;
-}
- int inet_pton(int af, const char *src, void *dst)
- {
-   return 0;
- }
-  
-       const char *inet_ntop(int af, const void *src,
-                             char *dst, socklen_t size)
-                             {
-                               return NULL;
-                             }
-
-
-in_addr_t inet_addr(const char *cp)
-{
-  return 0;
-}
-
        int ioctl(int fd, unsigned long request, ...)
        {
+       printf("***************ioctl called\n");
          return 0;
        }
        
@@ -462,8 +436,10 @@ struct tm *localtime(const time_t *t)
 class GreeterServiceImpl final : public Greeter::Service {
   Status SayHello(ServerContext* context, const HelloRequest* request,
                   HelloReply* reply) override {
+    printf("SayHello methf called\n");
     std::string prefix("Hello ");
-    reply->set_message(prefix + request->name());
+    //reply->set_message(prefix + request->name());
+    reply->set_message(prefix);
     return Status::OK;
   }
 };

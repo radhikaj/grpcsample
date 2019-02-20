@@ -26,100 +26,260 @@ oe_result_t ecall_run(
         char** output,
         uint64_t max_len,
         uint64_t* output_len);
-oe_result_t ecall_InitializeSockets(
-        oe_enclave_t* enclave);
 oe_result_t enc_enclave_thread(
         oe_enclave_t* enclave,
         uint64_t enc_key);
 
 /* List of ocalls */
 
-accept_Result ocall_accept(intptr_t a_hSocket,
-        int a_nAddrLen);
-oe_socket_error_t ocall_bind(intptr_t a_hSocket,
-        const void* a_Name,
-        int a_nNameLen);
-oe_socket_error_t ocall_closesocket(intptr_t a_hSocket);
-oe_socket_error_t ocall_connect(intptr_t a_hSocket,
-        const void* a_Name,
-        int a_nNameLen);
-int ocall_getaddrinfo(const char* a_NodeName,
-        const char* a_ServiceName,
-        int a_Flags,
-        int a_Family,
-        int a_SockType,
-        int a_Protocol,
-        addrinfo_Buffer* buf,
-        size_t len,
-        size_t* length_needed);
-gethostname_Result ocall_gethostname(void);
-getnameinfo_Result ocall_getnameinfo(const void* a_Addr,
-        int a_AddrLen,
-        int a_Flags);
-GetSockName_Result ocall_getpeername(intptr_t a_hSocket,
-        int a_nNameLen);
-GetSockName_Result ocall_getsockname(intptr_t a_hSocket,
-        int a_nNameLen);
-getsockopt_Result ocall_getsockopt(intptr_t a_hSocket,
-        int a_nLevel,
-        int a_nOptName,
-        int a_nOptLen);
-ioctlsocket_Result ocall_ioctlsocket(intptr_t a_hSocket,
-        int a_nCommand,
-        unsigned int a_uInputValue);
-oe_socket_error_t ocall_listen(intptr_t a_hSocket,
-        int a_nMaxConnections);
-ssize_t ocall_recv(intptr_t s,
-        void* buf,
-        size_t len,
-        int flags,
-        oe_socket_error_t* error);
-select_Result ocall_select(int a_nFds,
-        oe_fd_set_internal a_ReadFds,
-        oe_fd_set_internal a_WriteFds,
-        oe_fd_set_internal a_ExceptFds,
-        struct timeval a_Timeval);
-send_Result ocall_send(intptr_t a_hSocket,
-        const void* a_Message,
-        size_t a_nMessageLen,
-        int a_Flags);
-oe_socket_error_t ocall_setsockopt(intptr_t a_hSocket,
-        int a_nLevel,
-        int a_nOptName,
-        const void* a_OptVal,
-        int a_nOptLen);
-oe_socket_error_t ocall_shutdown(intptr_t a_hSocket,
-        oe_shutdown_how_t a_How);
-socket_Result ocall_socket(oe_socket_address_family_t a_AddressFamily,
-        oe_socket_type_t a_Type,
-        int a_Protocol);
-oe_socket_error_t ocall_WSACleanup(void);
-oe_socket_error_t ocall_WSAStartup(void);
+oe_socket_result_t oe_host_ocall_socket(int a,
+        int b,
+        int c);
+oe_socketpair_result_t oe_host_ocall_socketpair(int a,
+        int b,
+        int c,
+        int d[2]);
+oe_bind_result_t oe_host_ocall_bind(int a,
+        const struct sockaddr* b,
+        socklen_t c);
+oe_getsockname_result_t oe_host_ocall_getsockname(int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c);
+oe_connect_result_t oe_host_ocall_connect(int a,
+        const struct sockaddr* b,
+        socklen_t c);
+oe_getpeername_result_t oe_host_ocall_getpeername(int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c);
+oe_send_result_t oe_host_ocall_send(int a,
+        const void* b,
+        int c,
+        int d);
+oe_recv_result_t oe_host_ocall_recv(int a,
+        void* b,
+        int c,
+        int d);
+oe_sendto_result_t oe_host_ocall_sendto(int a,
+        const void* b,
+        int c,
+        int d,
+        const struct sockaddr* e,
+        socklen_t f);
+oe_recvfrom_result_t oe_host_ocall_recvfrom(int a,
+        void* b,
+        int c,
+        int d,
+        struct sockaddr* e,
+        socklen_t f_,
+        socklen_t* f);
+oe_sendmsg_result_t oe_host_ocall_sendmsg(int a,
+        struct msghdr* b,
+        int c,
+        void* iov_base,
+        int c2,
+        struct iovec* iov,
+        int numiov);
+oe_recvmsg_result_t oe_host_ocall_recvmsg(int a,
+        int msg_iovlen,
+        int* flags,
+        void* name,
+        int namelen,
+        int* actualnamelen,
+        void* control,
+        int controllen,
+        int* actualcontrollen,
+        int c,
+        void* iov,
+        int c2,
+        int* actualiovlen);
+oe_getsockopt_result_t oe_host_ocall_getsockopt(int a,
+        int b,
+        int c,
+        void* d,
+        socklen_t e_,
+        socklen_t* e);
+oe_setsockopt_result_t oe_host_ocall_setsockopt(int a,
+        int b,
+        int c,
+        const void* d,
+        socklen_t e);
+oe_listen_result_t oe_host_ocall_listen(int a,
+        int b);
+oe_accept_result_t oe_host_ocall_accept(int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c);
+oe_shutdown_result_t oe_host_ocall_shutdown(int a,
+        int b);
+oe_sockatmark_result_t oe_host_ocall_sockatmark(int a);
+oe_isfdtype_result_t oe_host_ocall_isfdtype(int a,
+        int b);
 void host_exit(int arg);
 void host_create_thread(uint64_t enc_key,
         oe_enclave_t* enc);
 int host_join_thread(uint64_t enc_key);
 int host_detach_thread(uint64_t enc_key);
-oe_pthread_condattr_init_result_t oe_host_ocall_pthread_condattr_init(pthread_condattr_t* a);
-oe_pthread_condattr_destroy_result_t oe_host_ocall_pthread_condattr_destroy(pthread_condattr_t* a);
-oe_pthread_condattr_getpshared_result_t oe_host_ocall_pthread_condattr_getpshared(const pthread_condattr_t* a,
-        int* b);
-oe_pthread_condattr_setpshared_result_t oe_host_ocall_pthread_condattr_setpshared(pthread_condattr_t* a,
-        int b);
-oe_pthread_condattr_getclock_result_t oe_host_ocall_pthread_condattr_getclock(const pthread_condattr_t* a,
-        clockid_t* b);
-oe_pthread_condattr_setclock_result_t oe_host_ocall_pthread_condattr_setclock(pthread_condattr_t* a,
-        clockid_t b);
+int host_cond_timedwait(pthread_cond_t* cond,
+        pthread_mutex_t* mutex,
+        const struct timespec* abstime);
+oe_pthread_cond_timedwait_result_t oe_host_ocall_pthread_cond_timedwait(pthread_cond_t* a,
+        pthread_mutex_t* b,
+        const struct timespec* c);
 oe_pthread_attr_init_result_t oe_host_ocall_pthread_attr_init(pthread_attr_t* a);
 oe_pthread_attr_destroy_result_t oe_host_ocall_pthread_attr_destroy(pthread_attr_t* a);
 oe_pthread_attr_setdetachstate_result_t oe_host_ocall_pthread_attr_setdetachstate(pthread_attr_t* a,
         int b);
+oe_pthread_condattr_init_result_t oe_host_ocall_pthread_condattr_init(pthread_condattr_t* a);
+oe_pthread_condattr_destroy_result_t oe_host_ocall_pthread_condattr_destroy(pthread_condattr_t* a);
+oe_pthread_condattr_setclock_result_t oe_host_ocall_pthread_condattr_setclock(pthread_condattr_t* a,
+        clockid_t b);
+oe_pthread_condattr_setpshared_result_t oe_host_ocall_pthread_condattr_setpshared(pthread_condattr_t* a,
+        int b);
+oe_pthread_condattr_getclock_result_t oe_host_ocall_pthread_condattr_getclock(const pthread_condattr_t* a,
+        clockid_t* b);
+oe_pthread_condattr_getpshared_result_t oe_host_ocall_pthread_condattr_getpshared(const pthread_condattr_t* a,
+        int* b);
 oe_eventfd_result_t oe_host_ocall_eventfd(unsigned int a,
         int b);
 oe_eventfd_read_result_t oe_host_ocall_eventfd_read(int a,
         eventfd_t* b);
 oe_eventfd_write_result_t oe_host_ocall_eventfd_write(int a,
         eventfd_t b);
+oe_htonl_result_t oe_host_ocall_htonl(uint32_t a);
+oe_htons_result_t oe_host_ocall_htons(uint16_t a);
+oe_ntohl_result_t oe_host_ocall_ntohl(uint32_t a);
+oe_ntohs_result_t oe_host_ocall_ntohs(uint16_t a);
+oe_inet_addr_result_t oe_host_ocall_inet_addr(const char* a);
+oe_inet_network_result_t oe_host_ocall_inet_network(const char* a);
+oe_inet_ntoa_result_t oe_host_ocall_inet_ntoa(struct in_addr a);
+oe_inet_pton_result_t oe_host_ocall_inet_pton(int a,
+        const char* b,
+        void* c,
+        int d);
+oe_inet_ntop_result_t oe_host_ocall_inet_ntop(int a,
+        const void* b,
+        int e,
+        char* c,
+        socklen_t d);
+oe_inet_aton_result_t oe_host_ocall_inet_aton(const char* a,
+        struct in_addr* b);
+oe_inet_makeaddr_result_t oe_host_ocall_inet_makeaddr(in_addr_t a,
+        in_addr_t b);
+oe_inet_lnaof_result_t oe_host_ocall_inet_lnaof(struct in_addr a);
+oe_inet_netof_result_t oe_host_ocall_inet_netof(struct in_addr a);
+oe_getaddrinfo_result_t oe_host_ocall_getaddrinfo(const char* a,
+        const char* b,
+        const struct addrinfo* c,
+        struct addrinfo** d);
+oe_freeaddrinfo_result_t oe_host_ocall_freeaddrinfo(struct addrinfo* a);
+oe_getnameinfo_result_t oe_host_ocall_getnameinfo(const struct sockaddr* a,
+        socklen_t b,
+        char* c,
+        socklen_t d,
+        char* e,
+        socklen_t f,
+        int g);
+oe_gai_strerror_result_t oe_host_ocall_gai_strerror(int a);
+oe_sethostent_result_t oe_host_ocall_sethostent(int a);
+oe_endhostent_result_t oe_host_ocall_endhostent(void);
+oe_gethostent_result_t oe_host_ocall_gethostent(void);
+oe_setnetent_result_t oe_host_ocall_setnetent(int a);
+oe_endnetent_result_t oe_host_ocall_endnetent(void);
+oe_getnetent_result_t oe_host_ocall_getnetent(void);
+oe_getnetbyaddr_result_t oe_host_ocall_getnetbyaddr(uint32_t a,
+        int b);
+oe_getnetbyname_result_t oe_host_ocall_getnetbyname(const char* a);
+oe_setservent_result_t oe_host_ocall_setservent(int a);
+oe_endservent_result_t oe_host_ocall_endservent(void);
+oe_getservent_result_t oe_host_ocall_getservent(void);
+oe_getservbyname_result_t oe_host_ocall_getservbyname(const char* a,
+        const char* b);
+oe_getservbyport_result_t oe_host_ocall_getservbyport(int a,
+        const char* b);
+oe_setprotoent_result_t oe_host_ocall_setprotoent(int a);
+oe_endprotoent_result_t oe_host_ocall_endprotoent(void);
+oe_getprotoent_result_t oe_host_ocall_getprotoent(void);
+oe_getprotobyname_result_t oe_host_ocall_getprotobyname(const char* a);
+oe_getprotobynumber_result_t oe_host_ocall_getprotobynumber(int a);
+oe_gethostbyname_result_t oe_host_ocall_gethostbyname(const char* a);
+oe_gethostbyaddr_result_t oe_host_ocall_gethostbyaddr(const void* a,
+        socklen_t b,
+        int c);
+oe___h_errno_location_result_t oe_host_ocall___h_errno_location(void);
+oe_herror_result_t oe_host_ocall_herror(const char* a);
+oe_hstrerror_result_t oe_host_ocall_hstrerror(int a);
+oe_gethostbyname_r_result_t oe_host_ocall_gethostbyname_r(const char* a,
+        struct hostent* b,
+        char* c,
+        size_t d,
+        struct hostent** e,
+        int* f);
+oe_gethostbyname2_r_result_t oe_host_ocall_gethostbyname2_r(const char* a,
+        int b,
+        struct hostent* c,
+        char* d,
+        size_t e,
+        struct hostent** f,
+        int* g);
+oe_gethostbyname2_result_t oe_host_ocall_gethostbyname2(const char* a,
+        int b);
+oe_gethostbyaddr_r_result_t oe_host_ocall_gethostbyaddr_r(const void* a,
+        socklen_t b,
+        int c,
+        struct hostent* d,
+        char* e,
+        size_t f,
+        struct hostent** g,
+        int* h);
+oe_getservbyport_r_result_t oe_host_ocall_getservbyport_r(int a,
+        const char* b,
+        struct servent* c,
+        char* d,
+        size_t e,
+        struct servent** f);
+oe_getservbyname_r_result_t oe_host_ocall_getservbyname_r(const char* a,
+        const char* b,
+        struct servent* c,
+        char* d,
+        size_t e,
+        struct servent** f);
+oe_epoll_create_result_t oe_host_ocall_epoll_create(int a);
+oe_epoll_create1_result_t oe_host_ocall_epoll_create1(int a);
+oe_epoll_ctl_result_t oe_host_ocall_epoll_ctl(int a,
+        int b,
+        int c,
+        struct epoll_event* d);
+oe_epoll_wait_result_t oe_host_ocall_epoll_wait(int a,
+        struct epoll_event* b,
+        int c,
+        int d);
+oe_epoll_pwait_result_t oe_host_ocall_epoll_pwait(int a,
+        struct epoll_event* b,
+        int c,
+        int d,
+        const sigset_t* e);
+oe_creat_result_t oe_host_ocall_creat(const char* a,
+        mode_t b);
+oe_fcntl_result_t oe_host_ocall_fcntl(int a,
+        int b,
+        int64_t c);
+oe_open_result_t oe_host_ocall_open(const char* a,
+        int b);
+oe_openat_result_t oe_host_ocall_openat(int a,
+        const char* b,
+        int c);
+oe_posix_fadvise_result_t oe_host_ocall_posix_fadvise(int a,
+        off_t b,
+        off_t c,
+        int d);
+oe_posix_fallocate_result_t oe_host_ocall_posix_fallocate(int a,
+        off_t b,
+        off_t c);
+oe_lockf_result_t oe_host_ocall_lockf(int a,
+        int b,
+        off_t c);
 
 OE_EXTERNC_END
 

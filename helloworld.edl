@@ -6,6 +6,12 @@ from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-
 from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/libcxx.edl" import *;
 from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/pthread.edl" import *;
 from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/eventfd.edl" import *;
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/inet.edl" import *;
+from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/netdb.edl" import *;
+from  "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/epoll.edl" import *;
+from  "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/fcntl.edl" import *;
+
+
 
 
     trusted {

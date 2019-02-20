@@ -148,6 +148,14 @@ int host_join_thread(uint64_t enc_key)
     return ret_val;
 }
 
+int host_cond_timedwait(pthread_cond_t * cond,
+       pthread_mutex_t * mutex,
+       const struct timespec * abstime)
+{
+    return pthread_cond_timedwait(cond,mutex, abstime);
+	
+}
+
 int host_detach_thread(uint64_t enc_key)
 {
     int ret_val = 0;

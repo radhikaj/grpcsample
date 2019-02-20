@@ -62,49 +62,6 @@ done:
         pargs_out->_result = _result;
 }
 
-void ecall_ecall_InitializeSockets(
-        uint8_t* input_buffer, size_t input_buffer_size,
-        uint8_t* output_buffer, size_t output_buffer_size,
-        size_t* output_bytes_written)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Prepare parameters */
-    ecall_InitializeSockets_args_t* pargs_in = (ecall_InitializeSockets_args_t*) input_buffer;
-    ecall_InitializeSockets_args_t* pargs_out = (ecall_InitializeSockets_args_t*) output_buffer;
-
-    size_t input_buffer_offset = 0;
-    size_t output_buffer_offset = 0;
-    OE_ADD_SIZE(input_buffer_offset, sizeof(*pargs_in));
-    OE_ADD_SIZE(output_buffer_offset, sizeof(*pargs_out));
-
-    /* Make sure input and output buffers lie within the enclave */
-    if (!input_buffer || !oe_is_within_enclave(input_buffer, input_buffer_size))
-        goto done;
-
-    if (!output_buffer || !oe_is_within_enclave(output_buffer, output_buffer_size))
-        goto done;
-
-    /* Set in and in-out pointers */
-
-    /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-
-    /* lfence after checks */
-    oe_lfence();
-
-    /* Call user function */
-    ecall_InitializeSockets(
-        );
-
-    /* Success. */
-    _result = OE_OK; 
-    *output_bytes_written = output_buffer_offset;
-
-done:
-    if (pargs_out && output_buffer_size >= sizeof(*pargs_out)) 
-        pargs_out->_result = _result;
-}
-
 void ecall_enc_enclave_thread(
         uint8_t* input_buffer, size_t input_buffer_size,
         uint8_t* output_buffer, size_t output_buffer_size,
@@ -153,7 +110,6 @@ done:
 /****** ECALL function table  *************/
 oe_ecall_func_t __oe_ecalls_table[] = {
     (oe_ecall_func_t) ecall_ecall_run,
-    (oe_ecall_func_t) ecall_ecall_InitializeSockets,
     (oe_ecall_func_t) ecall_enc_enclave_thread,
 };
 
@@ -162,15 +118,16 @@ size_t __oe_ecalls_table_size = OE_COUNTOF(__oe_ecalls_table);
 
 /* ocall wrappers */
 
-oe_result_t ocall_accept(
-        accept_Result* _retval,
-        intptr_t a_hSocket,
-        int a_nAddrLen)
+oe_result_t oe_host_ocall_socket(
+        oe_socket_result_t* _retval,
+        int a,
+        int b,
+        int c)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_accept_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_socket_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -185,14 +142,15 @@ oe_result_t ocall_accept(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nAddrLen = a_nAddrLen;
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_accept_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_socket_args_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_accept_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_socket_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -216,7 +174,7 @@ oe_result_t ocall_accept(
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_accept,
+                        fcn_id_oe_host_ocall_socket,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -246,16 +204,17 @@ done:
     return _result;
 }
 
-oe_result_t ocall_bind(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket,
-        const void* a_Name,
-        int a_nNameLen)
+oe_result_t oe_host_ocall_socketpair(
+        oe_socketpair_result_t* _retval,
+        int a,
+        int b,
+        int c,
+        int d[2])
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_bind_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_socketpair_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -270,16 +229,18 @@ oe_result_t ocall_bind(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_Name = (void*) a_Name;
-    _args.a_nNameLen = a_nNameLen;
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = (int*) d;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_bind_args_t));
-    if (a_Name) OE_ADD_SIZE(_input_buffer_size, _args.a_nNameLen);
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_socketpair_args_t));
+    if (d) OE_ADD_SIZE(_input_buffer_size, sizeof(int[2]));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_bind_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_socketpair_args_t));
+    if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(int[2]));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -297,14 +258,103 @@ oe_result_t ocall_bind(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_PARAM(a_Name, _args.a_nNameLen);
+    OE_WRITE_IN_OUT_PARAM(d, sizeof(int[2]));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_bind,
+                        fcn_id_oe_host_ocall_socketpair,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(d, (size_t)(sizeof(int[2])));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_bind(
+        oe_bind_result_t* _retval,
+        int a,
+        const struct sockaddr* b,
+        socklen_t c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_bind_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (struct sockaddr*) b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_bind_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_bind_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.c);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_bind,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -334,14 +384,17 @@ done:
     return _result;
 }
 
-oe_result_t ocall_closesocket(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket)
+oe_result_t oe_host_ocall_getsockname(
+        oe_getsockname_result_t* _retval,
+        int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_closesocket_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_getsockname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -356,13 +409,20 @@ oe_result_t ocall_closesocket(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
+    _args.a = a;
+    _args.b = (struct sockaddr*) b;
+    _args.c_ = c_;
+    _args.c = (socklen_t*) c;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_closesocket_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getsockname_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(socklen_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_closesocket_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getsockname_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -380,13 +440,105 @@ oe_result_t ocall_closesocket(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
+    OE_WRITE_IN_OUT_PARAM(b, _args.c_);
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(socklen_t));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_closesocket,
+                        fcn_id_oe_host_ocall_getsockname,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(_args.c_));
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(socklen_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_connect(
+        oe_connect_result_t* _retval,
+        int a,
+        const struct sockaddr* b,
+        socklen_t c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_connect_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (struct sockaddr*) b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_connect_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_connect_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.c);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_connect,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -416,16 +568,17 @@ done:
     return _result;
 }
 
-oe_result_t ocall_connect(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket,
-        const void* a_Name,
-        int a_nNameLen)
+oe_result_t oe_host_ocall_getpeername(
+        oe_getpeername_result_t* _retval,
+        int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_connect_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_getpeername_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -440,16 +593,20 @@ oe_result_t ocall_connect(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_Name = (void*) a_Name;
-    _args.a_nNameLen = a_nNameLen;
+    _args.a = a;
+    _args.b = (struct sockaddr*) b;
+    _args.c_ = c_;
+    _args.c = (socklen_t*) c;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_connect_args_t));
-    if (a_Name) OE_ADD_SIZE(_input_buffer_size, _args.a_nNameLen);
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getpeername_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(socklen_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_connect_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getpeername_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -467,14 +624,107 @@ oe_result_t ocall_connect(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_PARAM(a_Name, _args.a_nNameLen);
+    OE_WRITE_IN_OUT_PARAM(b, _args.c_);
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(socklen_t));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_connect,
+                        fcn_id_oe_host_ocall_getpeername,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(_args.c_));
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(socklen_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_send(
+        oe_send_result_t* _retval,
+        int a,
+        const void* b,
+        int c,
+        int d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_send_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (void*) b;
+    _args.c = c;
+    _args.d = d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_send_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_send_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.c);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_send,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -504,22 +754,17 @@ done:
     return _result;
 }
 
-oe_result_t ocall_getaddrinfo(
-        int* _retval,
-        const char* a_NodeName,
-        const char* a_ServiceName,
-        int a_Flags,
-        int a_Family,
-        int a_SockType,
-        int a_Protocol,
-        addrinfo_Buffer* buf,
-        size_t len,
-        size_t* length_needed)
+oe_result_t oe_host_ocall_recv(
+        oe_recv_result_t* _retval,
+        int a,
+        void* b,
+        int c,
+        int d)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_getaddrinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_recv_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -534,27 +779,18 @@ oe_result_t ocall_getaddrinfo(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_NodeName = (char*) a_NodeName;
-    _args.a_NodeName_len = (a_NodeName) ? (strlen(a_NodeName) + 1) : 0;
-    _args.a_ServiceName = (char*) a_ServiceName;
-    _args.a_ServiceName_len = (a_ServiceName) ? (strlen(a_ServiceName) + 1) : 0;
-    _args.a_Flags = a_Flags;
-    _args.a_Family = a_Family;
-    _args.a_SockType = a_SockType;
-    _args.a_Protocol = a_Protocol;
-    _args.buf = (addrinfo_Buffer*) buf;
-    _args.len = len;
-    _args.length_needed = (size_t*) length_needed;
+    _args.a = a;
+    _args.b = (void*) b;
+    _args.c = c;
+    _args.d = d;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_getaddrinfo_args_t));
-    if (a_NodeName) OE_ADD_SIZE(_input_buffer_size, _args.a_NodeName_len * sizeof(char));
-    if (a_ServiceName) OE_ADD_SIZE(_input_buffer_size, _args.a_ServiceName_len * sizeof(char));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_recv_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_getaddrinfo_args_t));
-    if (buf) OE_ADD_SIZE(_output_buffer_size, _args.len);
-    if (length_needed) OE_ADD_SIZE(_output_buffer_size, sizeof(size_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_recv_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, _args.c);
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -572,15 +808,14 @@ oe_result_t ocall_getaddrinfo(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_PARAM(a_NodeName, _args.a_NodeName_len * sizeof(char));
-    OE_WRITE_IN_PARAM(a_ServiceName, _args.a_ServiceName_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(b, _args.c);
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_getaddrinfo,
+                        fcn_id_oe_host_ocall_recv,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -602,8 +837,7 @@ oe_result_t ocall_getaddrinfo(
 
     /* Unmarshal return value and out, in-out parameters */
     *_retval = _pargs_out->_retval;
-    OE_READ_OUT_PARAM(buf, (size_t)(_args.len));
-    OE_READ_OUT_PARAM(length_needed, (size_t)(sizeof(size_t)));
+    OE_READ_IN_OUT_PARAM(b, (size_t)(_args.c));
 
     _result = OE_OK;
 done:    
@@ -612,13 +846,19 @@ done:
     return _result;
 }
 
-oe_result_t ocall_gethostname(
-        gethostname_Result* _retval)
+oe_result_t oe_host_ocall_sendto(
+        oe_sendto_result_t* _retval,
+        int a,
+        const void* b,
+        int c,
+        int d,
+        const struct sockaddr* e,
+        socklen_t f)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_gethostname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_sendto_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -633,12 +873,19 @@ oe_result_t ocall_gethostname(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (void*) b;
+    _args.c = c;
+    _args.d = d;
+    _args.e = (struct sockaddr*) e;
+    _args.f = f;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_gethostname_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_sendto_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_gethostname_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sendto_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -656,101 +903,14 @@ oe_result_t ocall_gethostname(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
+    OE_WRITE_IN_PARAM(b, _args.c);
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_gethostname,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_getnameinfo(
-        getnameinfo_Result* _retval,
-        const void* a_Addr,
-        int a_AddrLen,
-        int a_Flags)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_getnameinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_Addr = (void*) a_Addr;
-    _args.a_AddrLen = a_AddrLen;
-    _args.a_Flags = a_Flags;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_getnameinfo_args_t));
-    if (a_Addr) OE_ADD_SIZE(_input_buffer_size, _args.a_AddrLen);
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_getnameinfo_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_PARAM(a_Addr, _args.a_AddrLen);
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_getnameinfo,
+                        fcn_id_oe_host_ocall_sendto,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -780,15 +940,20 @@ done:
     return _result;
 }
 
-oe_result_t ocall_getpeername(
-        GetSockName_Result* _retval,
-        intptr_t a_hSocket,
-        int a_nNameLen)
+oe_result_t oe_host_ocall_recvfrom(
+        oe_recvfrom_result_t* _retval,
+        int a,
+        void* b,
+        int c,
+        int d,
+        struct sockaddr* e,
+        socklen_t f_,
+        socklen_t* f)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_getpeername_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_recvfrom_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -803,14 +968,23 @@ oe_result_t ocall_getpeername(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nNameLen = a_nNameLen;
+    _args.a = a;
+    _args.b = (void*) b;
+    _args.c = c;
+    _args.d = d;
+    _args.e = (struct sockaddr*) e;
+    _args.f_ = f_;
+    _args.f = (socklen_t*) f;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_getpeername_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_recvfrom_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c);
+    if (f) OE_ADD_SIZE(_input_buffer_size, sizeof(socklen_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_getpeername_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_recvfrom_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, _args.c);
+    if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -828,13 +1002,117 @@ oe_result_t ocall_getpeername(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
+    OE_WRITE_IN_OUT_PARAM(b, _args.c);
+    OE_WRITE_IN_OUT_PARAM(f, sizeof(socklen_t));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_getpeername,
+                        fcn_id_oe_host_ocall_recvfrom,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(_args.c));
+    OE_READ_IN_OUT_PARAM(f, (size_t)(sizeof(socklen_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_sendmsg(
+        oe_sendmsg_result_t* _retval,
+        int a,
+        struct msghdr* b,
+        int c,
+        void* iov_base,
+        int c2,
+        struct iovec* iov,
+        int numiov)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_sendmsg_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (struct msghdr*) b;
+    _args.c = c;
+    _args.iov_base = (void*) iov_base;
+    _args.c2 = c2;
+    _args.iov = (struct iovec*) iov;
+    _args.numiov = numiov;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_sendmsg_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct msghdr));
+    if (iov_base) OE_ADD_SIZE(_input_buffer_size, _args.c2);
+    if (iov) OE_ADD_SIZE(_input_buffer_size, (_args.numiov * sizeof(struct iovec)));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sendmsg_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, sizeof(struct msghdr));
+    OE_WRITE_IN_PARAM(iov_base, _args.c2);
+    OE_WRITE_IN_PARAM(iov, (_args.numiov * sizeof(struct iovec)));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_sendmsg,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -864,15 +1142,26 @@ done:
     return _result;
 }
 
-oe_result_t ocall_getsockname(
-        GetSockName_Result* _retval,
-        intptr_t a_hSocket,
-        int a_nNameLen)
+oe_result_t oe_host_ocall_recvmsg(
+        oe_recvmsg_result_t* _retval,
+        int a,
+        int msg_iovlen,
+        int* flags,
+        void* name,
+        int namelen,
+        int* actualnamelen,
+        void* control,
+        int controllen,
+        int* actualcontrollen,
+        int c,
+        void* iov,
+        int c2,
+        int* actualiovlen)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_getsockname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_recvmsg_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -887,14 +1176,39 @@ oe_result_t ocall_getsockname(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nNameLen = a_nNameLen;
+    _args.a = a;
+    _args.msg_iovlen = msg_iovlen;
+    _args.flags = (int*) flags;
+    _args.name = (void*) name;
+    _args.namelen = namelen;
+    _args.actualnamelen = (int*) actualnamelen;
+    _args.control = (void*) control;
+    _args.controllen = controllen;
+    _args.actualcontrollen = (int*) actualcontrollen;
+    _args.c = c;
+    _args.iov = (void*) iov;
+    _args.c2 = c2;
+    _args.actualiovlen = (int*) actualiovlen;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_getsockname_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_recvmsg_args_t));
+    if (flags) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (name) OE_ADD_SIZE(_input_buffer_size, _args.namelen);
+    if (actualnamelen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (control) OE_ADD_SIZE(_input_buffer_size, _args.controllen);
+    if (actualcontrollen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (iov) OE_ADD_SIZE(_input_buffer_size, _args.c2);
+    if (actualiovlen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_getsockname_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_recvmsg_args_t));
+    if (flags) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (name) OE_ADD_SIZE(_output_buffer_size, _args.namelen);
+    if (actualnamelen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (control) OE_ADD_SIZE(_output_buffer_size, _args.controllen);
+    if (actualcontrollen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (iov) OE_ADD_SIZE(_output_buffer_size, _args.c2);
+    if (actualiovlen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -912,13 +1226,219 @@ oe_result_t ocall_getsockname(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
+    OE_WRITE_IN_OUT_PARAM(flags, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(name, _args.namelen);
+    OE_WRITE_IN_OUT_PARAM(actualnamelen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(control, _args.controllen);
+    OE_WRITE_IN_OUT_PARAM(actualcontrollen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(iov, _args.c2);
+    OE_WRITE_IN_OUT_PARAM(actualiovlen, sizeof(int));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_getsockname,
+                        fcn_id_oe_host_ocall_recvmsg,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(flags, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(name, (size_t)(_args.namelen));
+    OE_READ_IN_OUT_PARAM(actualnamelen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(control, (size_t)(_args.controllen));
+    OE_READ_IN_OUT_PARAM(actualcontrollen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(iov, (size_t)(_args.c2));
+    OE_READ_IN_OUT_PARAM(actualiovlen, (size_t)(sizeof(int)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getsockopt(
+        oe_getsockopt_result_t* _retval,
+        int a,
+        int b,
+        int c,
+        void* d,
+        socklen_t e_,
+        socklen_t* e)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = (void*) d;
+    _args.e_ = e_;
+    _args.e = (socklen_t*) e;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getsockopt_args_t));
+    if (d) OE_ADD_SIZE(_input_buffer_size, _args.e_);
+    if (e) OE_ADD_SIZE(_input_buffer_size, sizeof(socklen_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getsockopt_args_t));
+    if (d) OE_ADD_SIZE(_output_buffer_size, _args.e_);
+    if (e) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(d, _args.e_);
+    OE_WRITE_IN_OUT_PARAM(e, sizeof(socklen_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getsockopt,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(d, (size_t)(_args.e_));
+    OE_READ_IN_OUT_PARAM(e, (size_t)(sizeof(socklen_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_setsockopt(
+        oe_setsockopt_result_t* _retval,
+        int a,
+        int b,
+        int c,
+        const void* d,
+        socklen_t e)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_setsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = (void*) d;
+    _args.e = e;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_setsockopt_args_t));
+    if (d) OE_ADD_SIZE(_input_buffer_size, _args.e);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setsockopt_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(d, _args.e);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_setsockopt,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -948,17 +1468,15 @@ done:
     return _result;
 }
 
-oe_result_t ocall_getsockopt(
-        getsockopt_Result* _retval,
-        intptr_t a_hSocket,
-        int a_nLevel,
-        int a_nOptName,
-        int a_nOptLen)
+oe_result_t oe_host_ocall_listen(
+        oe_listen_result_t* _retval,
+        int a,
+        int b)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_getsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_listen_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -973,16 +1491,14 @@ oe_result_t ocall_getsockopt(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nLevel = a_nLevel;
-    _args.a_nOptName = a_nOptName;
-    _args.a_nOptLen = a_nOptLen;
+    _args.a = a;
+    _args.b = b;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_getsockopt_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_listen_args_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_getsockopt_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_listen_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -1006,7 +1522,7 @@ oe_result_t ocall_getsockopt(
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_getsockopt,
+                        fcn_id_oe_host_ocall_listen,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -1036,16 +1552,17 @@ done:
     return _result;
 }
 
-oe_result_t ocall_ioctlsocket(
-        ioctlsocket_Result* _retval,
-        intptr_t a_hSocket,
-        int a_nCommand,
-        unsigned int a_uInputValue)
+oe_result_t oe_host_ocall_accept(
+        oe_accept_result_t* _retval,
+        int a,
+        struct sockaddr* b,
+        socklen_t c_,
+        socklen_t* c)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_ioctlsocket_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_accept_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -1060,15 +1577,108 @@ oe_result_t ocall_ioctlsocket(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nCommand = a_nCommand;
-    _args.a_uInputValue = a_uInputValue;
+    _args.a = a;
+    _args.b = (struct sockaddr*) b;
+    _args.c_ = c_;
+    _args.c = (socklen_t*) c;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_ioctlsocket_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_accept_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(socklen_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_ioctlsocket_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_accept_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(b, _args.c_);
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(socklen_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_accept,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(_args.c_));
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(socklen_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_shutdown(
+        oe_shutdown_result_t* _retval,
+        int a,
+        int b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_shutdown_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_shutdown_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_shutdown_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -1092,7 +1702,7 @@ oe_result_t ocall_ioctlsocket(
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_ioctlsocket,
+                        fcn_id_oe_host_ocall_shutdown,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -1122,15 +1732,14 @@ done:
     return _result;
 }
 
-oe_result_t ocall_listen(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket,
-        int a_nMaxConnections)
+oe_result_t oe_host_ocall_sockatmark(
+        oe_sockatmark_result_t* _retval,
+        int a)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_listen_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_sockatmark_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -1145,14 +1754,13 @@ oe_result_t ocall_listen(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nMaxConnections = a_nMaxConnections;
+    _args.a = a;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_listen_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_sockatmark_args_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_listen_args_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sockatmark_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -1176,7 +1784,7 @@ oe_result_t ocall_listen(
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_listen,
+                        fcn_id_oe_host_ocall_sockatmark,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -1206,18 +1814,15 @@ done:
     return _result;
 }
 
-oe_result_t ocall_recv(
-        ssize_t* _retval,
-        intptr_t s,
-        void* buf,
-        size_t len,
-        int flags,
-        oe_socket_error_t* error)
+oe_result_t oe_host_ocall_isfdtype(
+        oe_isfdtype_result_t* _retval,
+        int a,
+        int b)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    ocall_recv_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_isfdtype_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -1232,19 +1837,14 @@ oe_result_t ocall_recv(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.s = s;
-    _args.buf = (void*) buf;
-    _args.len = len;
-    _args.flags = flags;
-    _args.error = (oe_socket_error_t*) error;
+    _args.a = a;
+    _args.b = b;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_recv_args_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_isfdtype_args_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_recv_args_t));
-    if (buf) OE_ADD_SIZE(_output_buffer_size, _args.len);
-    if (error) OE_ADD_SIZE(_output_buffer_size, sizeof(oe_socket_error_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_isfdtype_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -1268,611 +1868,7 @@ oe_result_t ocall_recv(
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_ocall_recv,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-    OE_READ_OUT_PARAM(buf, (size_t)(_args.len));
-    OE_READ_OUT_PARAM(error, (size_t)(sizeof(oe_socket_error_t)));
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_select(
-        select_Result* _retval,
-        int a_nFds,
-        oe_fd_set_internal a_ReadFds,
-        oe_fd_set_internal a_WriteFds,
-        oe_fd_set_internal a_ExceptFds,
-        struct timeval a_Timeval)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_select_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_nFds = a_nFds;
-    _args.a_ReadFds = a_ReadFds;
-    _args.a_WriteFds = a_WriteFds;
-    _args.a_ExceptFds = a_ExceptFds;
-    _args.a_Timeval = a_Timeval;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_select_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_select_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_select,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_send(
-        send_Result* _retval,
-        intptr_t a_hSocket,
-        const void* a_Message,
-        size_t a_nMessageLen,
-        int a_Flags)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_send_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_Message = (void*) a_Message;
-    _args.a_nMessageLen = a_nMessageLen;
-    _args.a_Flags = a_Flags;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_send_args_t));
-    if (a_Message) OE_ADD_SIZE(_input_buffer_size, _args.a_nMessageLen);
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_send_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_PARAM(a_Message, _args.a_nMessageLen);
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_send,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_setsockopt(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket,
-        int a_nLevel,
-        int a_nOptName,
-        const void* a_OptVal,
-        int a_nOptLen)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_setsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_nLevel = a_nLevel;
-    _args.a_nOptName = a_nOptName;
-    _args.a_OptVal = (void*) a_OptVal;
-    _args.a_nOptLen = a_nOptLen;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_setsockopt_args_t));
-    if (a_OptVal) OE_ADD_SIZE(_input_buffer_size, _args.a_nOptLen);
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_setsockopt_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_PARAM(a_OptVal, _args.a_nOptLen);
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_setsockopt,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_shutdown(
-        oe_socket_error_t* _retval,
-        intptr_t a_hSocket,
-        oe_shutdown_how_t a_How)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_shutdown_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_hSocket = a_hSocket;
-    _args.a_How = a_How;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_shutdown_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_shutdown_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_shutdown,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_socket(
-        socket_Result* _retval,
-        oe_socket_address_family_t a_AddressFamily,
-        oe_socket_type_t a_Type,
-        int a_Protocol)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_socket_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a_AddressFamily = a_AddressFamily;
-    _args.a_Type = a_Type;
-    _args.a_Protocol = a_Protocol;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_socket_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_socket_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_socket,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_WSACleanup(
-        oe_socket_error_t* _retval)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_WSACleanup_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_WSACleanup_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_WSACleanup_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_WSACleanup,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t ocall_WSAStartup(
-        oe_socket_error_t* _retval)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    ocall_WSAStartup_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(ocall_WSAStartup_args_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(ocall_WSAStartup_args_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_ocall_WSAStartup,
+                        fcn_id_oe_host_ocall_isfdtype,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -2228,14 +2224,16 @@ done:
     return _result;
 }
 
-oe_result_t oe_host_ocall_pthread_condattr_init(
-        oe_pthread_condattr_init_result_t* _retval,
-        pthread_condattr_t* a)
+oe_result_t host_cond_timedwait(
+        int* _retval,
+        pthread_cond_t* cond,
+        pthread_mutex_t* mutex,
+        const struct timespec* abstime)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_init_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    host_cond_timedwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -2250,15 +2248,15 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
+    _args.cond = (pthread_cond_t*) cond;
+    _args.mutex = (pthread_mutex_t*) mutex;
+    _args.abstime = (struct timespec*) abstime;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_init_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(host_cond_timedwait_args_t));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_init_args_t));
-    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(host_cond_timedwait_args_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -2276,14 +2274,13 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_init,
+                        fcn_id_host_cond_timedwait,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -2305,7 +2302,6 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
 
     /* Unmarshal return value and out, in-out parameters */
     *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
 
     _result = OE_OK;
 done:    
@@ -2314,14 +2310,16 @@ done:
     return _result;
 }
 
-oe_result_t oe_host_ocall_pthread_condattr_destroy(
-        oe_pthread_condattr_destroy_result_t* _retval,
-        pthread_condattr_t* a)
+oe_result_t oe_host_ocall_pthread_cond_timedwait(
+        oe_pthread_cond_timedwait_result_t* _retval,
+        pthread_cond_t* a,
+        pthread_mutex_t* b,
+        const struct timespec* c)
 {
     oe_result_t _result = OE_FAILURE;
 
     /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_destroy_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+    oe_host_ocall_pthread_cond_timedwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
     /* Marshaling buffer and sizes */ 
     size_t _input_buffer_size = 0;
@@ -2336,15 +2334,20 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
 
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
+    _args.a = (pthread_cond_t*) a;
+    _args.b = (pthread_mutex_t*) b;
+    _args.c = (struct timespec*) c;
 
     /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_destroy_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_cond_timedwait_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_cond_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_mutex_t));
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(struct timespec));
 
     /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_destroy_args_t));
-    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_cond_timedwait_args_t));
+    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_cond_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_mutex_t));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -2362,14 +2365,16 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
+    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_cond_t));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(pthread_mutex_t));
+    OE_WRITE_IN_PARAM(c, sizeof(struct timespec));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
 
     /* Call host function */
     if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_destroy,
+                        fcn_id_oe_host_ocall_pthread_cond_timedwait,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
@@ -2391,363 +2396,8 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
 
     /* Unmarshal return value and out, in-out parameters */
     *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t oe_host_ocall_pthread_condattr_getpshared(
-        oe_pthread_condattr_getpshared_result_t* _retval,
-        const pthread_condattr_t* a,
-        int* b)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_getpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
-    _args.b = (int*) b;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getpshared_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
-    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getpshared_args_t));
-    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_PARAM(a, sizeof(pthread_condattr_t));
-    OE_WRITE_IN_OUT_PARAM(b, sizeof(int));
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_getpshared,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(int)));
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t oe_host_ocall_pthread_condattr_setpshared(
-        oe_pthread_condattr_setpshared_result_t* _retval,
-        pthread_condattr_t* a,
-        int b)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_setpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
-    _args.b = b;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setpshared_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setpshared_args_t));
-    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_setpshared,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t oe_host_ocall_pthread_condattr_getclock(
-        oe_pthread_condattr_getclock_result_t* _retval,
-        const pthread_condattr_t* a,
-        clockid_t* b)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_getclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
-    _args.b = (clockid_t*) b;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getclock_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
-    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(clockid_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getclock_args_t));
-    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(clockid_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_PARAM(a, sizeof(pthread_condattr_t));
-    OE_WRITE_IN_OUT_PARAM(b, sizeof(clockid_t));
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_getclock,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(clockid_t)));
-
-    _result = OE_OK;
-done:    
-    if (_buffer)
-        oe_free_ocall_buffer(_buffer);
-    return _result;
-}
-
-oe_result_t oe_host_ocall_pthread_condattr_setclock(
-        oe_pthread_condattr_setclock_result_t* _retval,
-        pthread_condattr_t* a,
-        clockid_t b)
-{
-    oe_result_t _result = OE_FAILURE;
-
-    /* Marshaling struct */ 
-    oe_host_ocall_pthread_condattr_setclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
-
-    /* Marshaling buffer and sizes */ 
-    size_t _input_buffer_size = 0;
-    size_t _output_buffer_size = 0;
-    size_t _total_buffer_size = 0;
-    uint8_t* _buffer = NULL;
-    uint8_t* _input_buffer = NULL;
-    uint8_t* _output_buffer = NULL;
-    size_t _input_buffer_offset = 0;
-    size_t _output_buffer_offset = 0;
-    size_t _output_bytes_written = 0;
-
-    /* Fill marshaling struct */
-    memset(&_args, 0, sizeof(_args));
-    _args.a = (pthread_condattr_t*) a;
-    _args.b = b;
-
-    /* Compute input buffer size. Include in and in-out parameters. */
-    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setclock_args_t));
-    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
-
-    /* Compute output buffer size. Include out and in-out parameters. */
-    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setclock_args_t));
-    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
-
-    /* Allocate marshaling buffer */
-    _total_buffer_size = _input_buffer_size;
-    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
-
-    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
-    _input_buffer = _buffer;
-    _output_buffer = _buffer + _input_buffer_size;
-    if (_buffer == NULL) { 
-        _result = OE_OUT_OF_MEMORY;
-        goto done;
-    }
-
-    /* Serialize buffer inputs (in and in-out parameters) */
-    *(uint8_t**)&_pargs_in = _input_buffer; 
-    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-
-    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
-
-    /* Copy args structure (now filled) to input buffer */
-    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
-
-    /* Call host function */
-    if((_result = oe_call_host_function(
-                        fcn_id_oe_host_ocall_pthread_condattr_setclock,
-                        _input_buffer, _input_buffer_size,
-                        _output_buffer, _output_buffer_size,
-                         &_output_bytes_written)) != OE_OK)
-        goto done;
-
-    /* Set up output arg struct pointer*/
-    *(uint8_t**)&_pargs_out = _output_buffer; 
-    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
-
-    /* Check if the call succeeded */
-    if ((_result=_pargs_out->_result) != OE_OK)
-        goto done;
-
-    /* Currently exactly _output_buffer_size bytes must be written */
-    if (_output_bytes_written != _output_buffer_size) {
-        _result = OE_FAILURE;
-        goto done;
-    }
-
-    /* Unmarshal return value and out, in-out parameters */
-    *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
+    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_cond_t)));
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(pthread_mutex_t)));
 
     _result = OE_OK;
 done:    
@@ -3016,6 +2666,534 @@ done:
     return _result;
 }
 
+oe_result_t oe_host_ocall_pthread_condattr_init(
+        oe_pthread_condattr_init_result_t* _retval,
+        pthread_condattr_t* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_init_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_init_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_init_args_t));
+    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_init,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_pthread_condattr_destroy(
+        oe_pthread_condattr_destroy_result_t* _retval,
+        pthread_condattr_t* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_destroy_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_destroy_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_destroy_args_t));
+    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_destroy,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_pthread_condattr_setclock(
+        oe_pthread_condattr_setclock_result_t* _retval,
+        pthread_condattr_t* a,
+        clockid_t b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_setclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setclock_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setclock_args_t));
+    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_setclock,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_pthread_condattr_setpshared(
+        oe_pthread_condattr_setpshared_result_t* _retval,
+        pthread_condattr_t* a,
+        int b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_setpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setpshared_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setpshared_args_t));
+    if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(a, sizeof(pthread_condattr_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_setpshared,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(a, (size_t)(sizeof(pthread_condattr_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_pthread_condattr_getclock(
+        oe_pthread_condattr_getclock_result_t* _retval,
+        const pthread_condattr_t* a,
+        clockid_t* b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_getclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+    _args.b = (clockid_t*) b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getclock_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(clockid_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getclock_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(clockid_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, sizeof(pthread_condattr_t));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(clockid_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_getclock,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(clockid_t)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_pthread_condattr_getpshared(
+        oe_pthread_condattr_getpshared_result_t* _retval,
+        const pthread_condattr_t* a,
+        int* b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_pthread_condattr_getpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (pthread_condattr_t*) a;
+    _args.b = (int*) b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getpshared_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, sizeof(pthread_condattr_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getpshared_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, sizeof(pthread_condattr_t));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(int));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_pthread_condattr_getpshared,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(int)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
 oe_result_t oe_host_ocall_eventfd(
         oe_eventfd_result_t* _retval,
         unsigned int a,
@@ -3243,6 +3421,5080 @@ oe_result_t oe_host_ocall_eventfd_write(
     /* Call host function */
     if((_result = oe_call_host_function(
                         fcn_id_oe_host_ocall_eventfd_write,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_htonl(
+        oe_htonl_result_t* _retval,
+        uint32_t a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_htonl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_htonl_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_htonl_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_htonl,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_htons(
+        oe_htons_result_t* _retval,
+        uint16_t a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_htons_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_htons_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_htons_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_htons,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_ntohl(
+        oe_ntohl_result_t* _retval,
+        uint32_t a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_ntohl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_ntohl_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_ntohl_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_ntohl,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_ntohs(
+        oe_ntohs_result_t* _retval,
+        uint16_t a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_ntohs_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_ntohs_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_ntohs_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_ntohs,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_addr(
+        oe_inet_addr_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_addr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_addr_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_addr_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_addr,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_network(
+        oe_inet_network_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_network_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_network_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_network_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_network,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_ntoa(
+        oe_inet_ntoa_result_t* _retval,
+        struct in_addr a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_ntoa_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_ntoa_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_ntoa_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_ntoa,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_pton(
+        oe_inet_pton_result_t* _retval,
+        int a,
+        const char* b,
+        void* c,
+        int d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_pton_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+    _args.c = (void*) c;
+    _args.d = d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_pton_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+    if (c) OE_ADD_SIZE(_input_buffer_size, _args.d);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_pton_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, _args.d);
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(c, _args.d);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_pton,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(_args.d));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_ntop(
+        oe_inet_ntop_result_t* _retval,
+        int a,
+        const void* b,
+        int e,
+        char* c,
+        socklen_t d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_ntop_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (void*) b;
+    _args.e = e;
+    _args.c = (char*) c;
+    _args.d = d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_ntop_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.e);
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_ntop_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(char));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.e);
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_ntop,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(char)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_aton(
+        oe_inet_aton_result_t* _retval,
+        const char* a,
+        struct in_addr* b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_aton_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = (struct in_addr*) b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_aton_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct in_addr));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_aton_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct in_addr));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(struct in_addr));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_aton,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(struct in_addr)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_makeaddr(
+        oe_inet_makeaddr_result_t* _retval,
+        in_addr_t a,
+        in_addr_t b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_makeaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_makeaddr_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_makeaddr_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_makeaddr,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_lnaof(
+        oe_inet_lnaof_result_t* _retval,
+        struct in_addr a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_lnaof_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_lnaof_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_lnaof_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_lnaof,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_inet_netof(
+        oe_inet_netof_result_t* _retval,
+        struct in_addr a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_inet_netof_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_inet_netof_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_netof_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_inet_netof,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getaddrinfo(
+        oe_getaddrinfo_result_t* _retval,
+        const char* a,
+        const char* b,
+        const struct addrinfo* c,
+        struct addrinfo** d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getaddrinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+    _args.c = (struct addrinfo*) c;
+    _args.d = (struct addrinfo**) d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getaddrinfo_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(struct addrinfo));
+    if (d) OE_ADD_SIZE(_input_buffer_size, sizeof(struct addrinfo*));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getaddrinfo_args_t));
+    if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(struct addrinfo*));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+    OE_WRITE_IN_PARAM(c, sizeof(struct addrinfo));
+    OE_WRITE_IN_OUT_PARAM(d, sizeof(struct addrinfo*));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getaddrinfo,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(d, (size_t)(sizeof(struct addrinfo*)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_freeaddrinfo(
+        oe_freeaddrinfo_result_t* _retval,
+        struct addrinfo* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_freeaddrinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (struct addrinfo*) a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_freeaddrinfo_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_freeaddrinfo_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_freeaddrinfo,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getnameinfo(
+        oe_getnameinfo_result_t* _retval,
+        const struct sockaddr* a,
+        socklen_t b,
+        char* c,
+        socklen_t d,
+        char* e,
+        socklen_t f,
+        int g)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getnameinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (struct sockaddr*) a;
+    _args.b = b;
+    _args.c = (char*) c;
+    _args.d = d;
+    _args.e = (char*) e;
+    _args.f = f;
+    _args.g = g;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getnameinfo_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.b);
+    if (c) OE_ADD_SIZE(_input_buffer_size, _args.d);
+    if (e) OE_ADD_SIZE(_input_buffer_size, _args.f);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnameinfo_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, _args.d);
+    if (e) OE_ADD_SIZE(_output_buffer_size, _args.f);
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.b);
+    OE_WRITE_IN_OUT_PARAM(c, _args.d);
+    OE_WRITE_IN_OUT_PARAM(e, _args.f);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getnameinfo,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(_args.d));
+    OE_READ_IN_OUT_PARAM(e, (size_t)(_args.f));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gai_strerror(
+        oe_gai_strerror_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gai_strerror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gai_strerror_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gai_strerror_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gai_strerror,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_sethostent(
+        oe_sethostent_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_sethostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_sethostent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sethostent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_sethostent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_endhostent(
+        oe_endhostent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_endhostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_endhostent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endhostent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_endhostent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostent(
+        oe_gethostent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_setnetent(
+        oe_setnetent_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_setnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_setnetent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setnetent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_setnetent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_endnetent(
+        oe_endnetent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_endnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_endnetent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endnetent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_endnetent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getnetent(
+        oe_getnetent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getnetent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getnetent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getnetbyaddr(
+        oe_getnetbyaddr_result_t* _retval,
+        uint32_t a,
+        int b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getnetbyaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getnetbyaddr_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetbyaddr_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getnetbyaddr,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getnetbyname(
+        oe_getnetbyname_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getnetbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getnetbyname_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetbyname_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getnetbyname,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_setservent(
+        oe_setservent_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_setservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_setservent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setservent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_setservent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_endservent(
+        oe_endservent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_endservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_endservent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endservent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_endservent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getservent(
+        oe_getservent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getservent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getservent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getservbyname(
+        oe_getservbyname_result_t* _retval,
+        const char* a,
+        const char* b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getservbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getservbyname_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyname_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getservbyname,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getservbyport(
+        oe_getservbyport_result_t* _retval,
+        int a,
+        const char* b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getservbyport_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getservbyport_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyport_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getservbyport,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_setprotoent(
+        oe_setprotoent_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_setprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_setprotoent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setprotoent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_setprotoent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_endprotoent(
+        oe_endprotoent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_endprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_endprotoent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endprotoent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_endprotoent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getprotoent(
+        oe_getprotoent_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getprotoent_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotoent_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getprotoent,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getprotobyname(
+        oe_getprotobyname_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getprotobyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getprotobyname_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotobyname_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getprotobyname,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getprotobynumber(
+        oe_getprotobynumber_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getprotobynumber_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getprotobynumber_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotobynumber_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getprotobynumber,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyname(
+        oe_gethostbyname_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyname_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyname,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyaddr(
+        oe_gethostbyaddr_result_t* _retval,
+        const void* a,
+        socklen_t b,
+        int c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (void*) a;
+    _args.b = b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyaddr_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.b);
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyaddr_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.b);
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyaddr,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall___h_errno_location(
+        oe___h_errno_location_result_t* _retval)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall___h_errno_location_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall___h_errno_location_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall___h_errno_location_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall___h_errno_location,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_herror(
+        oe_herror_result_t* _retval,
+        const char* a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_herror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_herror_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_herror_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_herror,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_hstrerror(
+        oe_hstrerror_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_hstrerror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_hstrerror_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_hstrerror_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_hstrerror,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyname_r(
+        oe_gethostbyname_r_result_t* _retval,
+        const char* a,
+        struct hostent* b,
+        char* c,
+        size_t d,
+        struct hostent** e,
+        int* f)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyname_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = (struct hostent*) b;
+    _args.c = (char*) c;
+    _args.d = d;
+    _args.e = (struct hostent**) e;
+    _args.f = (int*) f;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyname_r_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent));
+    if (c) OE_ADD_SIZE(_input_buffer_size, _args.d);
+    if (e) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent*));
+    if (f) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname_r_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent));
+    if (c) OE_ADD_SIZE(_output_buffer_size, _args.d);
+    if (e) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
+    if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(struct hostent));
+    OE_WRITE_IN_OUT_PARAM(c, _args.d);
+    OE_WRITE_IN_OUT_PARAM(e, sizeof(struct hostent*));
+    OE_WRITE_IN_OUT_PARAM(f, sizeof(int));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyname_r,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(struct hostent)));
+    OE_READ_IN_OUT_PARAM(c, (size_t)(_args.d));
+    OE_READ_IN_OUT_PARAM(e, (size_t)(sizeof(struct hostent*)));
+    OE_READ_IN_OUT_PARAM(f, (size_t)(sizeof(int)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyname2_r(
+        oe_gethostbyname2_r_result_t* _retval,
+        const char* a,
+        int b,
+        struct hostent* c,
+        char* d,
+        size_t e,
+        struct hostent** f,
+        int* g)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyname2_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = b;
+    _args.c = (struct hostent*) c;
+    _args.d = (char*) d;
+    _args.e = e;
+    _args.f = (struct hostent**) f;
+    _args.g = (int*) g;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyname2_r_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent));
+    if (d) OE_ADD_SIZE(_input_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent*));
+    if (g) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname2_r_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent));
+    if (d) OE_ADD_SIZE(_output_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
+    if (g) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(struct hostent));
+    OE_WRITE_IN_OUT_PARAM(d, _args.e);
+    OE_WRITE_IN_OUT_PARAM(f, sizeof(struct hostent*));
+    OE_WRITE_IN_OUT_PARAM(g, sizeof(int));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyname2_r,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(struct hostent)));
+    OE_READ_IN_OUT_PARAM(d, (size_t)(_args.e));
+    OE_READ_IN_OUT_PARAM(f, (size_t)(sizeof(struct hostent*)));
+    OE_READ_IN_OUT_PARAM(g, (size_t)(sizeof(int)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyname2(
+        oe_gethostbyname2_result_t* _retval,
+        const char* a,
+        int b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyname2_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyname2_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname2_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyname2,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_gethostbyaddr_r(
+        oe_gethostbyaddr_r_result_t* _retval,
+        const void* a,
+        socklen_t b,
+        int c,
+        struct hostent* d,
+        char* e,
+        size_t f,
+        struct hostent** g,
+        int* h)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_gethostbyaddr_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (void*) a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = (struct hostent*) d;
+    _args.e = (char*) e;
+    _args.f = f;
+    _args.g = (struct hostent**) g;
+    _args.h = (int*) h;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_gethostbyaddr_r_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.b);
+    if (d) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent));
+    if (e) OE_ADD_SIZE(_input_buffer_size, _args.f);
+    if (g) OE_ADD_SIZE(_input_buffer_size, sizeof(struct hostent*));
+    if (h) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyaddr_r_args_t));
+    if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent));
+    if (e) OE_ADD_SIZE(_output_buffer_size, _args.f);
+    if (g) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
+    if (h) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.b);
+    OE_WRITE_IN_OUT_PARAM(d, sizeof(struct hostent));
+    OE_WRITE_IN_OUT_PARAM(e, _args.f);
+    OE_WRITE_IN_OUT_PARAM(g, sizeof(struct hostent*));
+    OE_WRITE_IN_OUT_PARAM(h, sizeof(int));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_gethostbyaddr_r,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(d, (size_t)(sizeof(struct hostent)));
+    OE_READ_IN_OUT_PARAM(e, (size_t)(_args.f));
+    OE_READ_IN_OUT_PARAM(g, (size_t)(sizeof(struct hostent*)));
+    OE_READ_IN_OUT_PARAM(h, (size_t)(sizeof(int)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getservbyport_r(
+        oe_getservbyport_r_result_t* _retval,
+        int a,
+        const char* b,
+        struct servent* c,
+        char* d,
+        size_t e,
+        struct servent** f)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getservbyport_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+    _args.c = (struct servent*) c;
+    _args.d = (char*) d;
+    _args.e = e;
+    _args.f = (struct servent**) f;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getservbyport_r_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(struct servent));
+    if (d) OE_ADD_SIZE(_input_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_input_buffer_size, sizeof(struct servent*));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyport_r_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent));
+    if (d) OE_ADD_SIZE(_output_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent*));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(struct servent));
+    OE_WRITE_IN_OUT_PARAM(d, _args.e);
+    OE_WRITE_IN_OUT_PARAM(f, sizeof(struct servent*));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getservbyport_r,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(struct servent)));
+    OE_READ_IN_OUT_PARAM(d, (size_t)(_args.e));
+    OE_READ_IN_OUT_PARAM(f, (size_t)(sizeof(struct servent*)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_getservbyname_r(
+        oe_getservbyname_r_result_t* _retval,
+        const char* a,
+        const char* b,
+        struct servent* c,
+        char* d,
+        size_t e,
+        struct servent** f)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_getservbyname_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+    _args.c = (struct servent*) c;
+    _args.d = (char*) d;
+    _args.e = e;
+    _args.f = (struct servent**) f;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_getservbyname_r_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+    if (c) OE_ADD_SIZE(_input_buffer_size, sizeof(struct servent));
+    if (d) OE_ADD_SIZE(_input_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_input_buffer_size, sizeof(struct servent*));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyname_r_args_t));
+    if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent));
+    if (d) OE_ADD_SIZE(_output_buffer_size, _args.e);
+    if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent*));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+    OE_WRITE_IN_OUT_PARAM(c, sizeof(struct servent));
+    OE_WRITE_IN_OUT_PARAM(d, _args.e);
+    OE_WRITE_IN_OUT_PARAM(f, sizeof(struct servent*));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_getservbyname_r,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(c, (size_t)(sizeof(struct servent)));
+    OE_READ_IN_OUT_PARAM(d, (size_t)(_args.e));
+    OE_READ_IN_OUT_PARAM(f, (size_t)(sizeof(struct servent*)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_epoll_create(
+        oe_epoll_create_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_epoll_create_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_epoll_create_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_create_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_epoll_create,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_epoll_create1(
+        oe_epoll_create1_result_t* _retval,
+        int a)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_epoll_create1_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_epoll_create1_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_create1_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_epoll_create1,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_epoll_ctl(
+        oe_epoll_ctl_result_t* _retval,
+        int a,
+        int b,
+        int c,
+        struct epoll_event* d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_epoll_ctl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = (struct epoll_event*) d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_epoll_ctl_args_t));
+    if (d) OE_ADD_SIZE(_input_buffer_size, sizeof(struct epoll_event));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_ctl_args_t));
+    if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(d, sizeof(struct epoll_event));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_epoll_ctl,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(d, (size_t)(sizeof(struct epoll_event)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_epoll_wait(
+        oe_epoll_wait_result_t* _retval,
+        int a,
+        struct epoll_event* b,
+        int c,
+        int d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_epoll_wait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (struct epoll_event*) b;
+    _args.c = c;
+    _args.d = d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_epoll_wait_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct epoll_event));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_wait_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(struct epoll_event));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_epoll_wait,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(struct epoll_event)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_epoll_pwait(
+        oe_epoll_pwait_result_t* _retval,
+        int a,
+        struct epoll_event* b,
+        int c,
+        int d,
+        const sigset_t* e)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_epoll_pwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (struct epoll_event*) b;
+    _args.c = c;
+    _args.d = d;
+    _args.e = (sigset_t*) e;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_epoll_pwait_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct epoll_event));
+    if (e) OE_ADD_SIZE(_input_buffer_size, sizeof(sigset_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_pwait_args_t));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(struct epoll_event));
+    OE_WRITE_IN_PARAM(e, sizeof(sigset_t));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_epoll_pwait,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(struct epoll_event)));
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_creat(
+        oe_creat_result_t* _retval,
+        const char* a,
+        mode_t b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_creat_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_creat_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_creat_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_creat,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_fcntl(
+        oe_fcntl_result_t* _retval,
+        int a,
+        int b,
+        int64_t c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_fcntl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_fcntl_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_fcntl_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_fcntl,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_open(
+        oe_open_result_t* _retval,
+        const char* a,
+        int b)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_open_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = (char*) a;
+    _args.a_len = (a) ? (strlen(a) + 1) : 0;
+    _args.b = b;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_open_args_t));
+    if (a) OE_ADD_SIZE(_input_buffer_size, _args.a_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_open_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(a, _args.a_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_open,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_openat(
+        oe_openat_result_t* _retval,
+        int a,
+        const char* b,
+        int c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_openat_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = (char*) b;
+    _args.b_len = (b) ? (strlen(b) + 1) : 0;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_openat_args_t));
+    if (b) OE_ADD_SIZE(_input_buffer_size, _args.b_len * sizeof(char));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_openat_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+    OE_WRITE_IN_PARAM(b, _args.b_len * sizeof(char));
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_openat,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_posix_fadvise(
+        oe_posix_fadvise_result_t* _retval,
+        int a,
+        off_t b,
+        off_t c,
+        int d)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_posix_fadvise_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+    _args.d = d;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_posix_fadvise_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_posix_fadvise_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_posix_fadvise,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_posix_fallocate(
+        oe_posix_fallocate_result_t* _retval,
+        int a,
+        off_t b,
+        off_t c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_posix_fallocate_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_posix_fallocate_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_posix_fallocate_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_posix_fallocate,
+                        _input_buffer, _input_buffer_size,
+                        _output_buffer, _output_buffer_size,
+                         &_output_bytes_written)) != OE_OK)
+        goto done;
+
+    /* Set up output arg struct pointer*/
+    *(uint8_t**)&_pargs_out = _output_buffer; 
+    OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
+
+    /* Check if the call succeeded */
+    if ((_result=_pargs_out->_result) != OE_OK)
+        goto done;
+
+    /* Currently exactly _output_buffer_size bytes must be written */
+    if (_output_bytes_written != _output_buffer_size) {
+        _result = OE_FAILURE;
+        goto done;
+    }
+
+    /* Unmarshal return value and out, in-out parameters */
+    *_retval = _pargs_out->_retval;
+
+    _result = OE_OK;
+done:    
+    if (_buffer)
+        oe_free_ocall_buffer(_buffer);
+    return _result;
+}
+
+oe_result_t oe_host_ocall_lockf(
+        oe_lockf_result_t* _retval,
+        int a,
+        int b,
+        off_t c)
+{
+    oe_result_t _result = OE_FAILURE;
+
+    /* Marshaling struct */ 
+    oe_host_ocall_lockf_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
+
+    /* Marshaling buffer and sizes */ 
+    size_t _input_buffer_size = 0;
+    size_t _output_buffer_size = 0;
+    size_t _total_buffer_size = 0;
+    uint8_t* _buffer = NULL;
+    uint8_t* _input_buffer = NULL;
+    uint8_t* _output_buffer = NULL;
+    size_t _input_buffer_offset = 0;
+    size_t _output_buffer_offset = 0;
+    size_t _output_bytes_written = 0;
+
+    /* Fill marshaling struct */
+    memset(&_args, 0, sizeof(_args));
+    _args.a = a;
+    _args.b = b;
+    _args.c = c;
+
+    /* Compute input buffer size. Include in and in-out parameters. */
+    OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_lockf_args_t));
+
+    /* Compute output buffer size. Include out and in-out parameters. */
+    OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_lockf_args_t));
+
+    /* Allocate marshaling buffer */
+    _total_buffer_size = _input_buffer_size;
+    OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
+
+    _buffer = (uint8_t*) oe_allocate_ocall_buffer(_total_buffer_size);
+    _input_buffer = _buffer;
+    _output_buffer = _buffer + _input_buffer_size;
+    if (_buffer == NULL) { 
+        _result = OE_OUT_OF_MEMORY;
+        goto done;
+    }
+
+    /* Serialize buffer inputs (in and in-out parameters) */
+    *(uint8_t**)&_pargs_in = _input_buffer; 
+    OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
+
+
+    /* Copy args structure (now filled) to input buffer */
+    memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
+
+    /* Call host function */
+    if((_result = oe_call_host_function(
+                        fcn_id_oe_host_ocall_lockf,
                         _input_buffer, _input_buffer_size,
                         _output_buffer, _output_buffer_size,
                          &_output_bytes_written)) != OE_OK)
