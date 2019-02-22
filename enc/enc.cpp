@@ -179,7 +179,8 @@ static int _pthread_cond_timedwait(pthread_cond_t * cond,
        pthread_mutex_t * mutex,
        const struct timespec * abstime)
 {
-    int cond_timedwait_ret = 0;
+    //int cond_timedwait_ret = 0;
+    printf("cond_timedwait called\n");
     /*if (host_cond_timedwait(&cond_timedwait_ret, cond, mutex, abstime) != OE_OK)
     {
         printf(
@@ -187,8 +188,9 @@ static int _pthread_cond_timedwait(pthread_cond_t * cond,
             
         oe_abort();
     }*/
+    return pthread_cond_wait(cond, mutex);
 
-    return cond_timedwait_ret;
+   // return cond_timedwait_ret;
 }
 
 static int _pthread_join_hook(pthread_t enc_thread, void**)
