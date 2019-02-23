@@ -26,9 +26,11 @@ enclave {
 
         oe_recvfrom_result_t oe_host_ocall_recvfrom(int a, [in, out, size=c] void * b, int c, int d, [user_check] struct sockaddr * e, socklen_t f_, [in, out] socklen_t * f);
 
-        oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, [in] struct msghdr * b, int c, [in, size=c2] void *iov_base, int c2, [in, count=numiov]  struct iovec *iov, int numiov);
 
-        oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, int msg_iovlen,[in, out] int *flags,  [in, out, size=namelen] void *name, int namelen, [in, out] int *actualnamelen, [in, out, size=controllen] void *control, int controllen, [in, out] int *actualcontrollen, int c, [in, out, size=c2] void *iov, int c2, [in, out] int *actualiovlen);
+        oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, [in] struct msghdr * b, int c, [in, size=msg_namelen] void * msg_name, int msg_namelen, [in, count=msg_iovlen]  struct iovec *msg_iov, int msg_iovlen, 
+        [in, size=msg_controllen] void *msg_control, int msg_controllen, int msg_flags, [in, size=total_iovlen] void *iov_buffer, int total_iovlen );
+
+        oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, [in, out] struct msghdr * b, int c,  [in, size=msg_namelen] void * msg_name, int msg_namelen, [in, out] int *actual_msg_namelen,  [in, out, count=msg_iovlen]  struct iovec *msg_iov, int msg_iovlen, [in, out] int *actual_msg_iovlen,  [in, out, size=msg_controllen] void *msg_control, int msg_controllen, [in, out] int *actual_msg_controllen, [in,out] int *msg_flags, [in,out,size=individual_iov_len] void *individual_iov_buffer, int individual_iov_len, [in, out] int * actual_individual_iov_len);
 
         oe_getsockopt_result_t oe_host_ocall_getsockopt(int a, int b, int c, [in, out, size=e_] void * d, socklen_t e_, [in, out] socklen_t * e);
 

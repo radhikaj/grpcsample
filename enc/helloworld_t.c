@@ -1047,10 +1047,15 @@ oe_result_t oe_host_ocall_sendmsg(
         int a,
         struct msghdr* b,
         int c,
-        void* iov_base,
-        int c2,
-        struct iovec* iov,
-        int numiov)
+        void* msg_name,
+        int msg_namelen,
+        struct iovec* msg_iov,
+        int msg_iovlen,
+        void* msg_control,
+        int msg_controllen,
+        int msg_flags,
+        void* iov_buffer,
+        int total_iovlen)
 {
     oe_result_t _result = OE_FAILURE;
 
@@ -1073,16 +1078,23 @@ oe_result_t oe_host_ocall_sendmsg(
     _args.a = a;
     _args.b = (struct msghdr*) b;
     _args.c = c;
-    _args.iov_base = (void*) iov_base;
-    _args.c2 = c2;
-    _args.iov = (struct iovec*) iov;
-    _args.numiov = numiov;
+    _args.msg_name = (void*) msg_name;
+    _args.msg_namelen = msg_namelen;
+    _args.msg_iov = (struct iovec*) msg_iov;
+    _args.msg_iovlen = msg_iovlen;
+    _args.msg_control = (void*) msg_control;
+    _args.msg_controllen = msg_controllen;
+    _args.msg_flags = msg_flags;
+    _args.iov_buffer = (void*) iov_buffer;
+    _args.total_iovlen = total_iovlen;
 
     /* Compute input buffer size. Include in and in-out parameters. */
     OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_sendmsg_args_t));
     if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct msghdr));
-    if (iov_base) OE_ADD_SIZE(_input_buffer_size, _args.c2);
-    if (iov) OE_ADD_SIZE(_input_buffer_size, (_args.numiov * sizeof(struct iovec)));
+    if (msg_name) OE_ADD_SIZE(_input_buffer_size, _args.msg_namelen);
+    if (msg_iov) OE_ADD_SIZE(_input_buffer_size, (_args.msg_iovlen * sizeof(struct iovec)));
+    if (msg_control) OE_ADD_SIZE(_input_buffer_size, _args.msg_controllen);
+    if (iov_buffer) OE_ADD_SIZE(_input_buffer_size, _args.total_iovlen);
 
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sendmsg_args_t));
@@ -1104,8 +1116,10 @@ oe_result_t oe_host_ocall_sendmsg(
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
     OE_WRITE_IN_PARAM(b, sizeof(struct msghdr));
-    OE_WRITE_IN_PARAM(iov_base, _args.c2);
-    OE_WRITE_IN_PARAM(iov, (_args.numiov * sizeof(struct iovec)));
+    OE_WRITE_IN_PARAM(msg_name, _args.msg_namelen);
+    OE_WRITE_IN_PARAM(msg_iov, (_args.msg_iovlen * sizeof(struct iovec)));
+    OE_WRITE_IN_PARAM(msg_control, _args.msg_controllen);
+    OE_WRITE_IN_PARAM(iov_buffer, _args.total_iovlen);
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
@@ -1145,18 +1159,21 @@ done:
 oe_result_t oe_host_ocall_recvmsg(
         oe_recvmsg_result_t* _retval,
         int a,
-        int msg_iovlen,
-        int* flags,
-        void* name,
-        int namelen,
-        int* actualnamelen,
-        void* control,
-        int controllen,
-        int* actualcontrollen,
+        struct msghdr* b,
         int c,
-        void* iov,
-        int c2,
-        int* actualiovlen)
+        void* msg_name,
+        int msg_namelen,
+        int* actual_msg_namelen,
+        struct iovec* msg_iov,
+        int msg_iovlen,
+        int* actual_msg_iovlen,
+        void* msg_control,
+        int msg_controllen,
+        int* actual_msg_controllen,
+        int* msg_flags,
+        void* individual_iov_buffer,
+        int individual_iov_len,
+        int* actual_individual_iov_len)
 {
     oe_result_t _result = OE_FAILURE;
 
@@ -1177,38 +1194,46 @@ oe_result_t oe_host_ocall_recvmsg(
     /* Fill marshaling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
-    _args.msg_iovlen = msg_iovlen;
-    _args.flags = (int*) flags;
-    _args.name = (void*) name;
-    _args.namelen = namelen;
-    _args.actualnamelen = (int*) actualnamelen;
-    _args.control = (void*) control;
-    _args.controllen = controllen;
-    _args.actualcontrollen = (int*) actualcontrollen;
+    _args.b = (struct msghdr*) b;
     _args.c = c;
-    _args.iov = (void*) iov;
-    _args.c2 = c2;
-    _args.actualiovlen = (int*) actualiovlen;
+    _args.msg_name = (void*) msg_name;
+    _args.msg_namelen = msg_namelen;
+    _args.actual_msg_namelen = (int*) actual_msg_namelen;
+    _args.msg_iov = (struct iovec*) msg_iov;
+    _args.msg_iovlen = msg_iovlen;
+    _args.actual_msg_iovlen = (int*) actual_msg_iovlen;
+    _args.msg_control = (void*) msg_control;
+    _args.msg_controllen = msg_controllen;
+    _args.actual_msg_controllen = (int*) actual_msg_controllen;
+    _args.msg_flags = (int*) msg_flags;
+    _args.individual_iov_buffer = (void*) individual_iov_buffer;
+    _args.individual_iov_len = individual_iov_len;
+    _args.actual_individual_iov_len = (int*) actual_individual_iov_len;
 
     /* Compute input buffer size. Include in and in-out parameters. */
     OE_ADD_SIZE(_input_buffer_size, sizeof(oe_host_ocall_recvmsg_args_t));
-    if (flags) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
-    if (name) OE_ADD_SIZE(_input_buffer_size, _args.namelen);
-    if (actualnamelen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
-    if (control) OE_ADD_SIZE(_input_buffer_size, _args.controllen);
-    if (actualcontrollen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
-    if (iov) OE_ADD_SIZE(_input_buffer_size, _args.c2);
-    if (actualiovlen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (b) OE_ADD_SIZE(_input_buffer_size, sizeof(struct msghdr));
+    if (msg_name) OE_ADD_SIZE(_input_buffer_size, _args.msg_namelen);
+    if (actual_msg_namelen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (msg_iov) OE_ADD_SIZE(_input_buffer_size, (_args.msg_iovlen * sizeof(struct iovec)));
+    if (actual_msg_iovlen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (msg_control) OE_ADD_SIZE(_input_buffer_size, _args.msg_controllen);
+    if (actual_msg_controllen) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (msg_flags) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
+    if (individual_iov_buffer) OE_ADD_SIZE(_input_buffer_size, _args.individual_iov_len);
+    if (actual_individual_iov_len) OE_ADD_SIZE(_input_buffer_size, sizeof(int));
 
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_recvmsg_args_t));
-    if (flags) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
-    if (name) OE_ADD_SIZE(_output_buffer_size, _args.namelen);
-    if (actualnamelen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
-    if (control) OE_ADD_SIZE(_output_buffer_size, _args.controllen);
-    if (actualcontrollen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
-    if (iov) OE_ADD_SIZE(_output_buffer_size, _args.c2);
-    if (actualiovlen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct msghdr));
+    if (actual_msg_namelen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (msg_iov) OE_ADD_SIZE(_output_buffer_size, (_args.msg_iovlen * sizeof(struct iovec)));
+    if (actual_msg_iovlen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (msg_control) OE_ADD_SIZE(_output_buffer_size, _args.msg_controllen);
+    if (actual_msg_controllen) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (msg_flags) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
+    if (individual_iov_buffer) OE_ADD_SIZE(_output_buffer_size, _args.individual_iov_len);
+    if (actual_individual_iov_len) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
     /* Allocate marshaling buffer */
     _total_buffer_size = _input_buffer_size;
@@ -1226,13 +1251,16 @@ oe_result_t oe_host_ocall_recvmsg(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_OUT_PARAM(flags, sizeof(int));
-    OE_WRITE_IN_OUT_PARAM(name, _args.namelen);
-    OE_WRITE_IN_OUT_PARAM(actualnamelen, sizeof(int));
-    OE_WRITE_IN_OUT_PARAM(control, _args.controllen);
-    OE_WRITE_IN_OUT_PARAM(actualcontrollen, sizeof(int));
-    OE_WRITE_IN_OUT_PARAM(iov, _args.c2);
-    OE_WRITE_IN_OUT_PARAM(actualiovlen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(b, sizeof(struct msghdr));
+    OE_WRITE_IN_PARAM(msg_name, _args.msg_namelen);
+    OE_WRITE_IN_OUT_PARAM(actual_msg_namelen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(msg_iov, (_args.msg_iovlen * sizeof(struct iovec)));
+    OE_WRITE_IN_OUT_PARAM(actual_msg_iovlen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(msg_control, _args.msg_controllen);
+    OE_WRITE_IN_OUT_PARAM(actual_msg_controllen, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(msg_flags, sizeof(int));
+    OE_WRITE_IN_OUT_PARAM(individual_iov_buffer, _args.individual_iov_len);
+    OE_WRITE_IN_OUT_PARAM(actual_individual_iov_len, sizeof(int));
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
@@ -1261,13 +1289,15 @@ oe_result_t oe_host_ocall_recvmsg(
 
     /* Unmarshal return value and out, in-out parameters */
     *_retval = _pargs_out->_retval;
-    OE_READ_IN_OUT_PARAM(flags, (size_t)(sizeof(int)));
-    OE_READ_IN_OUT_PARAM(name, (size_t)(_args.namelen));
-    OE_READ_IN_OUT_PARAM(actualnamelen, (size_t)(sizeof(int)));
-    OE_READ_IN_OUT_PARAM(control, (size_t)(_args.controllen));
-    OE_READ_IN_OUT_PARAM(actualcontrollen, (size_t)(sizeof(int)));
-    OE_READ_IN_OUT_PARAM(iov, (size_t)(_args.c2));
-    OE_READ_IN_OUT_PARAM(actualiovlen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(b, (size_t)(sizeof(struct msghdr)));
+    OE_READ_IN_OUT_PARAM(actual_msg_namelen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(msg_iov, (size_t)((_args.msg_iovlen * sizeof(struct iovec))));
+    OE_READ_IN_OUT_PARAM(actual_msg_iovlen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(msg_control, (size_t)(_args.msg_controllen));
+    OE_READ_IN_OUT_PARAM(actual_msg_controllen, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(msg_flags, (size_t)(sizeof(int)));
+    OE_READ_IN_OUT_PARAM(individual_iov_buffer, (size_t)(_args.individual_iov_len));
+    OE_READ_IN_OUT_PARAM(actual_individual_iov_len, (size_t)(sizeof(int)));
 
     _result = OE_OK;
 done:    

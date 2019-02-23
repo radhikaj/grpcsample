@@ -92,6 +92,11 @@ ssize_t recvfrom(int a, void * b, int c, int d, struct sockaddr * e, socklen_t *
     return retval.ret;
 }
 
+
+
+
+
+
 ssize_t sendmsg(int a, const struct msghdr * b, int c)
 {
     oe_sendmsg_result_t retval;
@@ -101,7 +106,7 @@ ssize_t sendmsg(int a, const struct msghdr * b, int c)
     {
       total_len =total_len +  b->msg_iov[i].iov_len;
     }
-    printf("sendmsg called total bytes: total_len\n");
+    printf("sendmsg called total bytes: total_len=%d\n", total_len);
     char *iovbuff = (char *)malloc(total_len);
     if(!iovbuff)
     {
@@ -109,11 +114,21 @@ ssize_t sendmsg(int a, const struct msghdr * b, int c)
     }
     char *start = iovbuff;
     for(int i =0 ; i < b->msg_iovlen; i++)
-    {
+    { 
       memcpy(start, b->msg_iov[i].iov_base, b->msg_iov[i].iov_len);
       start = start +  b->msg_iov[i].iov_len;
     }
-    oe_host_ocall_sendmsg(&retval, a, (struct msghdr*)b, c, iovbuff, total_len, (struct iovec*)b->msg_iov, b->msg_iovlen);
+    for(int i =0 ; i < b->msg_iovlen; i++)
+    {
+      printf("Enclave iov = %d of %d\n", i, b->msg_iovlen); 
+      for(int k=0; k < b->msg_iov[i].iov_len; k++)
+        printf("%02x\t", ((char*)(b->msg_iov[i].iov_base))[k]);
+      printf(" Enclave done printing iov \n\n");
+    }
+    printf("Enclave side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);
+    
+    int actual_msg_namelen;
+    oe_host_ocall_sendmsg(&retval, a, (struct msghdr*)b, c, b->msg_name, b->msg_namelen, (struct iovec*)b->msg_iov, b->msg_iovlen, b->msg_control, b->msg_controllen,  b->msg_flags, iovbuff, total_len);
     errno = retval.error;
     return retval.ret;
 }
@@ -128,14 +143,17 @@ ssize_t recvmsg(int a, struct msghdr * b, int c)
     }
     printf("revcmsg called\n");
      
-    void *iov = (void*)b->msg_iov[0].iov_base;
-    int len =  b->msg_iov[0].iov_len;
-    int actualmsglen, actualcontrollen, actualiovlen;
+   
+    int actual_msg_namelen, actual_msg_controllen, actual_msg_iovlen;
+    int actual_individual_iovlen;
     
-    oe_host_ocall_recvmsg(&retval, a, b->msg_iovlen, &(b->msg_flags), b->msg_name, b->msg_namelen, &actualmsglen, b->msg_control, b->msg_controllen, &actualcontrollen, c, iov, len, &actualiovlen);  
-    b->msg_namelen = actualmsglen;
-    b->msg_controllen = actualcontrollen;
-    b->msg_iov[0].iov_len = actualiovlen;
+    oe_host_ocall_recvmsg(&retval, a, b, c,  b->msg_name, b->msg_namelen, &actual_msg_namelen,  (struct iovec*)b->msg_iov, b->msg_iovlen, &actual_msg_iovlen,
+    b->msg_control, b->msg_controllen, &actual_msg_controllen, &b->msg_flags, b->msg_iov[0].iov_base, b->msg_iov[0].iov_len, &actual_individual_iovlen );  
+    
+    b->msg_namelen = actual_msg_namelen;
+    b->msg_controllen = actual_msg_controllen;
+    b->msg_iov[0].iov_len = actual_individual_iovlen;
+    b->msg_iovlen = actual_msg_iovlen;
      
     errno = retval.error;
     return retval.ret;

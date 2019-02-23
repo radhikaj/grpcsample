@@ -83,16 +83,34 @@ oe_recvfrom_result_t oe_host_ocall_recvfrom(int a, void * b, int c, int d, struc
     return result;
 }
 
-oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, struct msghdr * b, int c, void *iovecbase, int length, struct iovec * p, const int num_p)
+        
+oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, struct msghdr * b, int c, void *msg_name, int msg_namelen, struct iovec *msg_iov, int msg_iovlen, void *msg_control, int msg_controllen, int msg_flags, void * iov_buffer, int total_iovlen)
 {
-    oe_sendmsg_result_t result;
-    b->msg_iov = p;
+    oe_sendmsg_result_t result;    
+    memcpy(b->msg_name, msg_name, msg_namelen);
+    b->msg_namelen = msg_namelen;
+    b->msg_iov = msg_iov;
+    b->msg_iovlen = msg_iovlen;
+    memcpy(b->msg_control, msg_control, msg_controllen);
+    b->msg_controllen = msg_controllen;
+    b->msg_flags = msg_flags;
+    
     int length_so_far = 0;
-    for(int i =0 ;  i < num_p; i++)
+    for(int i =0 ;  i < msg_iovlen; i++)
     {
-        b->msg_iov[i].iov_base = ((char*)iovecbase) + length_so_far;
+        b->msg_iov[i].iov_base = ((char*)iov_buffer) + length_so_far;
+        b->msg_iov[i].iov_len = msg_iov[i].iov_len;
         length_so_far =length_so_far +  b->msg_iov[i].iov_len;
+        printf(" host b->msg_iov[i].iov_len = %d\n",b->msg_iov[i].iov_len);
     }
+    for(int i =0 ; i < b->msg_iovlen; i++)
+    {
+      printf("host iov = %d of %d\n", i, b->msg_iovlen); 
+      for(int k=0; k < b->msg_iov[i].iov_len; k++)
+        printf("%02x\t", ((char*)(b->msg_iov[i].iov_base))[k]);
+      printf(" host done printing iov \n\n");
+    }
+    printf("host side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);
 
     result.ret = sendmsg(a, b, c);
     result.error = errno;
@@ -101,34 +119,36 @@ oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, struct msghdr * b, int c, void 
     return result;
 }
 
-oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, int msg_iovlen, int *msgflags, void *name, int namelen, int *actualnamelen, void *control, int controllen, int *actualcontrollen, int c, void *iov_base, int iovlen, int *actualiovlen)
+
+
+
+oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, struct msghdr* b,
+        int c, void* msg_name, int msg_namelen,  int *actual_msg_namelen,  struct iovec *msg_iov, int msg_iovlen, int * actual_msg_iovlen, void *msg_control, int msg_controllen, int *actual_msg_controllen,  int *actual_msg_flags, void *individual_iov_base, int individual_iovlen, int *individual_actualiovlen)
 {
-    oe_recvmsg_result_t result;
-     //char buffer[8096];
-     //struct sockaddr_storage src_addr;
+     oe_recvmsg_result_t result;
      
-
-     struct iovec iov[1];
-     iov[0].iov_base=(char*)iov_base;
-     iov[0].iov_len=iovlen;
-
+     printf("msg_iovlen = %d\n", msg_iovlen);
+     if(msg_iovlen != 1)
+     {
+       abort();
+     }
+     
       struct msghdr message;
-      message.msg_name=name;
-      message.msg_namelen=namelen;
-      message.msg_iov=iov;
-      message.msg_iovlen=msg_iovlen;
-      message.msg_control=control;
-      message.msg_controllen=controllen;
+      b->msg_name=msg_name;
+      b->msg_namelen=msg_namelen;
+      b->msg_iov=msg_iov;
+      b->msg_iov[0].iov_base=(char*)individual_iov_base;
+      b->msg_iov[0].iov_len=individual_iovlen;
+      b->msg_iovlen=msg_iovlen;
+      b->msg_control=msg_control;
+      b->msg_controllen=msg_controllen;
+      b->msg_flags= *actual_msg_flags;     
       
-      
-      printf("msg_iovlen = %d\n", msg_iovlen);
-      
-//    result.ret = recvmsg(a, b, c);
-    result.ret = recvmsg(a, &message, c);
-    *actualnamelen = message.msg_namelen;
-    *actualcontrollen = message.msg_controllen;
-    *actualiovlen = message.msg_iov[0].iov_len;
-    *msgflags = message.msg_flags;
+    result.ret = recvmsg(a, b, c);
+    *actual_msg_namelen = b->msg_namelen;
+    *actual_msg_controllen = b->msg_controllen;
+    *actual_msg_iovlen = b->msg_iov[0].iov_len;
+    *actual_msg_flags = b->msg_flags;
     result.error = errno;
     
     printf("recvmsg: ret=%d, errno=%d\n", result.ret, errno);

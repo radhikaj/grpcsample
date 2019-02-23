@@ -440,8 +440,8 @@ class GreeterServiceImpl final : public Greeter::Service {
                   HelloReply* reply) override {
     printf("SayHello methf called\n");
     std::string prefix("Hello ");
-    //reply->set_message(prefix + request->name());
-    reply->set_message(prefix);
+    reply->set_message(prefix + request->name());
+    //reply->set_message(prefix);
     return Status::OK;
   }
 };

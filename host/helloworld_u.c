@@ -675,8 +675,10 @@ void ocall_oe_host_ocall_sendmsg(
     }
     /* Set in and in-out pointers */
     OE_SET_IN_POINTER(b, sizeof(struct msghdr));
-    OE_SET_IN_POINTER(iov_base, pargs_in->c2);
-    OE_SET_IN_POINTER(iov, (pargs_in->numiov * sizeof(struct iovec)));
+    OE_SET_IN_POINTER(msg_name, pargs_in->msg_namelen);
+    OE_SET_IN_POINTER(msg_iov, (pargs_in->msg_iovlen * sizeof(struct iovec)));
+    OE_SET_IN_POINTER(msg_control, pargs_in->msg_controllen);
+    OE_SET_IN_POINTER(iov_buffer, pargs_in->total_iovlen);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
 
@@ -685,10 +687,15 @@ void ocall_oe_host_ocall_sendmsg(
         pargs_in->a,
         pargs_in->b,
         pargs_in->c,
-        pargs_in->iov_base,
-        pargs_in->c2,
-        pargs_in->iov,
-        pargs_in->numiov);
+        pargs_in->msg_name,
+        pargs_in->msg_namelen,
+        pargs_in->msg_iov,
+        pargs_in->msg_iovlen,
+        pargs_in->msg_control,
+        pargs_in->msg_controllen,
+        pargs_in->msg_flags,
+        pargs_in->iov_buffer,
+        pargs_in->total_iovlen);
 
     /* Success. */
     _result = OE_OK; 
@@ -723,38 +730,46 @@ void ocall_oe_host_ocall_recvmsg(
 
     }
     /* Set in and in-out pointers */
-    OE_SET_IN_OUT_POINTER(flags, sizeof(int));
-    OE_SET_IN_OUT_POINTER(name, pargs_in->namelen);
-    OE_SET_IN_OUT_POINTER(actualnamelen, sizeof(int));
-    OE_SET_IN_OUT_POINTER(control, pargs_in->controllen);
-    OE_SET_IN_OUT_POINTER(actualcontrollen, sizeof(int));
-    OE_SET_IN_OUT_POINTER(iov, pargs_in->c2);
-    OE_SET_IN_OUT_POINTER(actualiovlen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(b, sizeof(struct msghdr));
+    OE_SET_IN_POINTER(msg_name, pargs_in->msg_namelen);
+    OE_SET_IN_OUT_POINTER(actual_msg_namelen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(msg_iov, (pargs_in->msg_iovlen * sizeof(struct iovec)));
+    OE_SET_IN_OUT_POINTER(actual_msg_iovlen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(msg_control, pargs_in->msg_controllen);
+    OE_SET_IN_OUT_POINTER(actual_msg_controllen, sizeof(int));
+    OE_SET_IN_OUT_POINTER(msg_flags, sizeof(int));
+    OE_SET_IN_OUT_POINTER(individual_iov_buffer, pargs_in->individual_iov_len);
+    OE_SET_IN_OUT_POINTER(actual_individual_iov_len, sizeof(int));
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_COPY_AND_SET_IN_OUT_POINTER(flags, sizeof(int));
-    OE_COPY_AND_SET_IN_OUT_POINTER(name, pargs_in->namelen);
-    OE_COPY_AND_SET_IN_OUT_POINTER(actualnamelen, sizeof(int));
-    OE_COPY_AND_SET_IN_OUT_POINTER(control, pargs_in->controllen);
-    OE_COPY_AND_SET_IN_OUT_POINTER(actualcontrollen, sizeof(int));
-    OE_COPY_AND_SET_IN_OUT_POINTER(iov, pargs_in->c2);
-    OE_COPY_AND_SET_IN_OUT_POINTER(actualiovlen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(b, sizeof(struct msghdr));
+    OE_COPY_AND_SET_IN_OUT_POINTER(actual_msg_namelen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(msg_iov, (pargs_in->msg_iovlen * sizeof(struct iovec)));
+    OE_COPY_AND_SET_IN_OUT_POINTER(actual_msg_iovlen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(msg_control, pargs_in->msg_controllen);
+    OE_COPY_AND_SET_IN_OUT_POINTER(actual_msg_controllen, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(msg_flags, sizeof(int));
+    OE_COPY_AND_SET_IN_OUT_POINTER(individual_iov_buffer, pargs_in->individual_iov_len);
+    OE_COPY_AND_SET_IN_OUT_POINTER(actual_individual_iov_len, sizeof(int));
 
     /* Call user function */
     pargs_out->_retval = oe_host_ocall_recvmsg(
         pargs_in->a,
-        pargs_in->msg_iovlen,
-        pargs_in->flags,
-        pargs_in->name,
-        pargs_in->namelen,
-        pargs_in->actualnamelen,
-        pargs_in->control,
-        pargs_in->controllen,
-        pargs_in->actualcontrollen,
+        pargs_in->b,
         pargs_in->c,
-        pargs_in->iov,
-        pargs_in->c2,
-        pargs_in->actualiovlen);
+        pargs_in->msg_name,
+        pargs_in->msg_namelen,
+        pargs_in->actual_msg_namelen,
+        pargs_in->msg_iov,
+        pargs_in->msg_iovlen,
+        pargs_in->actual_msg_iovlen,
+        pargs_in->msg_control,
+        pargs_in->msg_controllen,
+        pargs_in->actual_msg_controllen,
+        pargs_in->msg_flags,
+        pargs_in->individual_iov_buffer,
+        pargs_in->individual_iov_len,
+        pargs_in->actual_individual_iov_len);
 
     /* Success. */
     _result = OE_OK; 
