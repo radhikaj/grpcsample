@@ -101,12 +101,12 @@ ssize_t sendmsg(int a, const struct msghdr * b, int c)
 {
     oe_sendmsg_result_t retval;
     int total_len = 0;
-    printf("sendmsg called\n");
+    //printf("sendmsg called\n");
     for (int i =0 ; i < b->msg_iovlen; i++)
     {
       total_len =total_len +  b->msg_iov[i].iov_len;
     }
-    printf("sendmsg called total bytes: total_len=%d\n", total_len);
+    //printf("sendmsg called total bytes: total_len=%d\n", total_len);
     char *iovbuff = (char *)malloc(total_len);
     if(!iovbuff)
     {
@@ -118,14 +118,14 @@ ssize_t sendmsg(int a, const struct msghdr * b, int c)
       memcpy(start, b->msg_iov[i].iov_base, b->msg_iov[i].iov_len);
       start = start +  b->msg_iov[i].iov_len;
     }
-    for(int i =0 ; i < b->msg_iovlen; i++)
+    /*for(int i =0 ; i < b->msg_iovlen; i++)
     {
       printf("Enclave iov = %d of %d\n", i, b->msg_iovlen); 
       for(int k=0; k < b->msg_iov[i].iov_len; k++)
         printf("%02x\t", ((char*)(b->msg_iov[i].iov_base))[k]);
       printf(" Enclave done printing iov \n\n");
     }
-    printf("Enclave side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);
+    printf("Enclave side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);*/
     
     int actual_msg_namelen;
     oe_host_ocall_sendmsg(&retval, a, (struct msghdr*)b, c, b->msg_name, b->msg_namelen, (struct iovec*)b->msg_iov, b->msg_iovlen, b->msg_control, b->msg_controllen,  b->msg_flags, iovbuff, total_len);
@@ -141,7 +141,7 @@ ssize_t recvmsg(int a, struct msghdr * b, int c)
     {
       abort();
     }
-    printf("revcmsg called\n");
+    //printf("revcmsg called\n");
      
    
     int actual_msg_namelen, actual_msg_controllen, actual_msg_iovlen;

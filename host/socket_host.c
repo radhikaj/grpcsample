@@ -101,21 +101,21 @@ oe_sendmsg_result_t oe_host_ocall_sendmsg(int a, struct msghdr * b, int c, void 
         b->msg_iov[i].iov_base = ((char*)iov_buffer) + length_so_far;
         b->msg_iov[i].iov_len = msg_iov[i].iov_len;
         length_so_far =length_so_far +  b->msg_iov[i].iov_len;
-        printf(" host b->msg_iov[i].iov_len = %d\n",b->msg_iov[i].iov_len);
+        //printf(" host b->msg_iov[i].iov_len = %d\n",b->msg_iov[i].iov_len);
     }
-    for(int i =0 ; i < b->msg_iovlen; i++)
+    /*for(int i =0 ; i < b->msg_iovlen; i++)
     {
       printf("host iov = %d of %d\n", i, b->msg_iovlen); 
       for(int k=0; k < b->msg_iov[i].iov_len; k++)
         printf("%02x\t", ((char*)(b->msg_iov[i].iov_base))[k]);
       printf(" host done printing iov \n\n");
     }
-    printf("host side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);
+    printf("host side: b->msg_namlen=%d, b->msg_iovlen=%d, b->msg_controllen=%d, b->msg_flags=%d\n", b->msg_namelen, b->msg_iovlen, b->msg_controllen, b->msg_flags);*/
 
     result.ret = sendmsg(a, b, c);
     result.error = errno;
 
-     printf("sendmsg: ret=%d, errno=%d\n", result.ret, errno);
+    //printf("sendmsg: ret=%d, errno=%d\n", result.ret, errno);
     return result;
 }
 
@@ -127,7 +127,7 @@ oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, struct msghdr* b,
 {
      oe_recvmsg_result_t result;
      
-     printf("msg_iovlen = %d\n", msg_iovlen);
+     //printf("msg_iovlen = %d\n", msg_iovlen);
      if(msg_iovlen != 1)
      {
        abort();
@@ -151,7 +151,7 @@ oe_recvmsg_result_t oe_host_ocall_recvmsg(int a, struct msghdr* b,
     *actual_msg_flags = b->msg_flags;
     result.error = errno;
     
-    printf("recvmsg: ret=%d, errno=%d\n", result.ret, errno);
+    //printf("recvmsg: ret=%d, errno=%d\n", result.ret, errno);
     return result;
 }
 
