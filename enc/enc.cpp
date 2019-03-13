@@ -38,11 +38,7 @@ class GreeterServiceImpl final : public Greeter::Service {
 
 void setuphooks();
 
-int ecall_run(const char *input,
-    uint64_t input_len,
-    char **output,
-    uint64_t max_len,
-    uint64_t *output_len)
+int ecall_run()
 {
   setuphooks();
   std::string server_address("0.0.0.0:50051");

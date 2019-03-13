@@ -25,6 +25,7 @@
 #include <grpcpp/impl/codegen/async_generic_service.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
+#include <grpcpp/impl/codegen/client_callback.h>
 #include <grpcpp/impl/codegen/method_handler_impl.h>
 #include <grpcpp/impl/codegen/proto_utils.h>
 #include <grpcpp/impl/codegen/rpc_method.h>
@@ -137,13 +138,13 @@ class Greeter final {
    public:
     ExperimentalWithCallbackMethod_SayHello() {
       ::grpc::Service::experimental().MarkMethodCallback(0,
-        new ::grpc::internal::CallbackUnaryHandler< ExperimentalWithCallbackMethod_SayHello<BaseClass>, ::helloworld::HelloRequest, ::helloworld::HelloReply>(
+        new ::grpc::internal::CallbackUnaryHandler< ::helloworld::HelloRequest, ::helloworld::HelloReply>(
           [this](::grpc::ServerContext* context,
                  const ::helloworld::HelloRequest* request,
                  ::helloworld::HelloReply* response,
                  ::grpc::experimental::ServerCallbackRpcController* controller) {
-                   this->SayHello(context, request, response, controller);
-                 }, this));
+                   return this->SayHello(context, request, response, controller);
+                 }));
     }
     ~ExperimentalWithCallbackMethod_SayHello() override {
       BaseClassMustBeDerivedFromService(this);
@@ -200,13 +201,13 @@ class Greeter final {
    public:
     ExperimentalWithRawCallbackMethod_SayHello() {
       ::grpc::Service::experimental().MarkMethodRawCallback(0,
-        new ::grpc::internal::CallbackUnaryHandler< ExperimentalWithRawCallbackMethod_SayHello<BaseClass>, ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+        new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
           [this](::grpc::ServerContext* context,
                  const ::grpc::ByteBuffer* request,
                  ::grpc::ByteBuffer* response,
                  ::grpc::experimental::ServerCallbackRpcController* controller) {
                    this->SayHello(context, request, response, controller);
-                 }, this));
+                 }));
     }
     ~ExperimentalWithRawCallbackMethod_SayHello() override {
       BaseClassMustBeDerivedFromService(this);

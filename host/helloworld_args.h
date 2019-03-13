@@ -31,11 +31,6 @@ typedef enum string_limit {
 
 typedef struct _ecall_run_args_t {
 	int _retval;
-	char* input;
-	uint64_t input_len;
-	char** output;
-	uint64_t max_len;
-	uint64_t* output_len;
     oe_result_t _result;
  } ecall_run_args_t;
 

@@ -2,24 +2,20 @@
 // Licensed under the MIT License.
 
 enclave {
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/socket.edl" import *;
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/libcxx.edl" import *;
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/pthread.edl" import *;
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/eventfd.edl" import *;
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/inet.edl" import *;
-from "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/netdb.edl" import *;
-from  "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/epoll.edl" import *;
-from  "/home/azureuser/openenclave-install/share/openenclave/samples/hello-world-grpc/fcntl.edl" import *;
+from "socket.edl" import *;
+from "libcxx.edl" import *;
+from "pthread.edl" import *;
+from "eventfd.edl" import *;
+from "inet.edl" import *;
+from "netdb.edl" import *;
+from  "epoll.edl" import *;
+from  "fcntl.edl" import *;
 
 
 
 
     trusted {
-    public int ecall_run([in, size=input_len] const char *input,
-                         uint64_t input_len,
-                         [out, size=max_len] char **output,
-                         uint64_t max_len,
-                         [out] uint64_t *output_len);
+    public int ecall_run();
     };
 };
 

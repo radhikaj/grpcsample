@@ -13,19 +13,14 @@ OE_EXTERNC_BEGIN
 
 oe_result_t ecall_run(
         oe_enclave_t* enclave,
-        int* _retval,
-        const char* input,
-        uint64_t input_len,
-        char** output,
-        uint64_t max_len,
-        uint64_t* output_len)
+        int* _retval)
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* Marshalling struct */ 
     ecall_run_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -36,24 +31,16 @@ oe_result_t ecall_run(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
-    _args.input = (char*) input;
-    _args.input_len = input_len;
-    _args.output = (char**) output;
-    _args.max_len = max_len;
-    _args.output_len = (uint64_t*) output_len;
 
     /* Compute input buffer size. Include in and in-out parameters. */
     OE_ADD_SIZE(_input_buffer_size, sizeof(ecall_run_args_t));
-    if (input) OE_ADD_SIZE(_input_buffer_size, _args.input_len);
 
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(ecall_run_args_t));
-    if (output) OE_ADD_SIZE(_output_buffer_size, _args.max_len);
-    if (output_len) OE_ADD_SIZE(_output_buffer_size, sizeof(uint64_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -69,7 +56,6 @@ oe_result_t ecall_run(
     *(uint8_t**)&_pargs_in = _input_buffer; 
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
 
-    OE_WRITE_IN_PARAM(input, _args.input_len);
 
     /* Copy args structure (now filled) to input buffer */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
@@ -83,7 +69,7 @@ oe_result_t ecall_run(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -99,8 +85,6 @@ oe_result_t ecall_run(
 
     /* Unmarshal return value and out, in-out parameters */
     *_retval = _pargs_out->_retval;
-    OE_READ_OUT_PARAM(output, (size_t)(_args.max_len));
-    OE_READ_OUT_PARAM(output_len, (size_t)(sizeof(uint64_t)));
 
     _result = OE_OK;
 done:    
@@ -117,10 +101,10 @@ oe_result_t enc_enclave_thread(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* Marshalling struct */ 
     enc_enclave_thread_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -131,7 +115,7 @@ oe_result_t enc_enclave_thread(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.enc_key = enc_key;
 
@@ -141,7 +125,7 @@ oe_result_t enc_enclave_thread(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(enc_enclave_thread_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -170,7 +154,7 @@ oe_result_t enc_enclave_thread(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 

@@ -20,12 +20,7 @@ oe_result_t oe_create_helloworld_enclave(const char* path,
 
 oe_result_t ecall_run(
         oe_enclave_t* enclave,
-        int* _retval,
-        const char* input,
-        uint64_t input_len,
-        char** output,
-        uint64_t max_len,
-        uint64_t* output_len);
+        int* _retval);
 oe_result_t enc_enclave_thread(
         oe_enclave_t* enclave,
         uint64_t enc_key);

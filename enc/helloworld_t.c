@@ -36,22 +36,15 @@ void ecall_ecall_run(
         goto done;
 
     /* Set in and in-out pointers */
-    OE_SET_IN_POINTER(input, pargs_in->input_len);
 
     /* Set out and in-out pointers. In-out parameters are copied to output buffer. */
-    OE_SET_OUT_POINTER(output, pargs_in->max_len);
-    OE_SET_OUT_POINTER(output_len, sizeof(uint64_t));
 
     /* lfence after checks */
     oe_lfence();
 
     /* Call user function */
     pargs_out->_retval = ecall_run(
-        (const char*) pargs_in->input,
-        pargs_in->input_len,
-        pargs_in->output,
-        pargs_in->max_len,
-        pargs_in->output_len);
+        );
 
     /* Success. */
     _result = OE_OK; 
@@ -126,10 +119,15 @@ oe_result_t oe_host_ocall_socket(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_socket_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -140,7 +138,7 @@ oe_result_t oe_host_ocall_socket(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -152,7 +150,7 @@ oe_result_t oe_host_ocall_socket(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_socket_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -180,7 +178,7 @@ oe_result_t oe_host_ocall_socket(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -213,10 +211,15 @@ oe_result_t oe_host_ocall_socketpair(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_socketpair_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -227,7 +230,7 @@ oe_result_t oe_host_ocall_socketpair(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -242,7 +245,7 @@ oe_result_t oe_host_ocall_socketpair(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_socketpair_args_t));
     if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(int[2]));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -271,7 +274,7 @@ oe_result_t oe_host_ocall_socketpair(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -304,10 +307,15 @@ oe_result_t oe_host_ocall_bind(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_bind_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -318,7 +326,7 @@ oe_result_t oe_host_ocall_bind(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct sockaddr*) b;
@@ -331,7 +339,7 @@ oe_result_t oe_host_ocall_bind(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_bind_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -360,7 +368,7 @@ oe_result_t oe_host_ocall_bind(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -393,10 +401,15 @@ oe_result_t oe_host_ocall_getsockname(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getsockname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -407,7 +420,7 @@ oe_result_t oe_host_ocall_getsockname(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct sockaddr*) b;
@@ -424,7 +437,7 @@ oe_result_t oe_host_ocall_getsockname(
     if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
     if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -454,7 +467,7 @@ oe_result_t oe_host_ocall_getsockname(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -488,10 +501,15 @@ oe_result_t oe_host_ocall_connect(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_connect_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -502,7 +520,7 @@ oe_result_t oe_host_ocall_connect(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct sockaddr*) b;
@@ -515,7 +533,7 @@ oe_result_t oe_host_ocall_connect(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_connect_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -544,7 +562,7 @@ oe_result_t oe_host_ocall_connect(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -577,10 +595,15 @@ oe_result_t oe_host_ocall_getpeername(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getpeername_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -591,7 +614,7 @@ oe_result_t oe_host_ocall_getpeername(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct sockaddr*) b;
@@ -608,7 +631,7 @@ oe_result_t oe_host_ocall_getpeername(
     if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
     if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -638,7 +661,7 @@ oe_result_t oe_host_ocall_getpeername(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -673,10 +696,15 @@ oe_result_t oe_host_ocall_send(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_send_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -687,7 +715,7 @@ oe_result_t oe_host_ocall_send(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (void*) b;
@@ -701,7 +729,7 @@ oe_result_t oe_host_ocall_send(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_send_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -730,7 +758,7 @@ oe_result_t oe_host_ocall_send(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -763,10 +791,15 @@ oe_result_t oe_host_ocall_recv(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_recv_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -777,7 +810,7 @@ oe_result_t oe_host_ocall_recv(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (void*) b;
@@ -792,7 +825,7 @@ oe_result_t oe_host_ocall_recv(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_recv_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, _args.c);
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -821,7 +854,7 @@ oe_result_t oe_host_ocall_recv(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -857,10 +890,15 @@ oe_result_t oe_host_ocall_sendto(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_sendto_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -871,7 +909,7 @@ oe_result_t oe_host_ocall_sendto(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (void*) b;
@@ -887,7 +925,7 @@ oe_result_t oe_host_ocall_sendto(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sendto_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -916,7 +954,7 @@ oe_result_t oe_host_ocall_sendto(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -952,10 +990,15 @@ oe_result_t oe_host_ocall_recvfrom(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_recvfrom_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -966,7 +1009,7 @@ oe_result_t oe_host_ocall_recvfrom(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (void*) b;
@@ -986,7 +1029,7 @@ oe_result_t oe_host_ocall_recvfrom(
     if (b) OE_ADD_SIZE(_output_buffer_size, _args.c);
     if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1016,7 +1059,7 @@ oe_result_t oe_host_ocall_recvfrom(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1059,10 +1102,15 @@ oe_result_t oe_host_ocall_sendmsg(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_sendmsg_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1073,7 +1121,7 @@ oe_result_t oe_host_ocall_sendmsg(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct msghdr*) b;
@@ -1099,7 +1147,7 @@ oe_result_t oe_host_ocall_sendmsg(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sendmsg_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1132,7 +1180,7 @@ oe_result_t oe_host_ocall_sendmsg(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1177,10 +1225,15 @@ oe_result_t oe_host_ocall_recvmsg(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_recvmsg_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1191,7 +1244,7 @@ oe_result_t oe_host_ocall_recvmsg(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct msghdr*) b;
@@ -1235,7 +1288,7 @@ oe_result_t oe_host_ocall_recvmsg(
     if (individual_iov_buffer) OE_ADD_SIZE(_output_buffer_size, _args.individual_iov_len);
     if (actual_individual_iov_len) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1273,7 +1326,7 @@ oe_result_t oe_host_ocall_recvmsg(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1317,10 +1370,15 @@ oe_result_t oe_host_ocall_getsockopt(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1331,7 +1389,7 @@ oe_result_t oe_host_ocall_getsockopt(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -1350,7 +1408,7 @@ oe_result_t oe_host_ocall_getsockopt(
     if (d) OE_ADD_SIZE(_output_buffer_size, _args.e_);
     if (e) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1380,7 +1438,7 @@ oe_result_t oe_host_ocall_getsockopt(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1416,10 +1474,15 @@ oe_result_t oe_host_ocall_setsockopt(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_setsockopt_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1430,7 +1493,7 @@ oe_result_t oe_host_ocall_setsockopt(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -1445,7 +1508,7 @@ oe_result_t oe_host_ocall_setsockopt(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setsockopt_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1474,7 +1537,7 @@ oe_result_t oe_host_ocall_setsockopt(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1505,10 +1568,15 @@ oe_result_t oe_host_ocall_listen(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_listen_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1519,7 +1587,7 @@ oe_result_t oe_host_ocall_listen(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -1530,7 +1598,7 @@ oe_result_t oe_host_ocall_listen(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_listen_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1558,7 +1626,7 @@ oe_result_t oe_host_ocall_listen(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1591,10 +1659,15 @@ oe_result_t oe_host_ocall_accept(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_accept_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1605,7 +1678,7 @@ oe_result_t oe_host_ocall_accept(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct sockaddr*) b;
@@ -1622,7 +1695,7 @@ oe_result_t oe_host_ocall_accept(
     if (b) OE_ADD_SIZE(_output_buffer_size, _args.c_);
     if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(socklen_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1652,7 +1725,7 @@ oe_result_t oe_host_ocall_accept(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1685,10 +1758,15 @@ oe_result_t oe_host_ocall_shutdown(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_shutdown_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1699,7 +1777,7 @@ oe_result_t oe_host_ocall_shutdown(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -1710,7 +1788,7 @@ oe_result_t oe_host_ocall_shutdown(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_shutdown_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1738,7 +1816,7 @@ oe_result_t oe_host_ocall_shutdown(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1768,10 +1846,15 @@ oe_result_t oe_host_ocall_sockatmark(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_sockatmark_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1782,7 +1865,7 @@ oe_result_t oe_host_ocall_sockatmark(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -1792,7 +1875,7 @@ oe_result_t oe_host_ocall_sockatmark(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sockatmark_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1820,7 +1903,7 @@ oe_result_t oe_host_ocall_sockatmark(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1851,10 +1934,15 @@ oe_result_t oe_host_ocall_isfdtype(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_isfdtype_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1865,7 +1953,7 @@ oe_result_t oe_host_ocall_isfdtype(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -1876,7 +1964,7 @@ oe_result_t oe_host_ocall_isfdtype(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_isfdtype_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1904,7 +1992,7 @@ oe_result_t oe_host_ocall_isfdtype(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -1933,10 +2021,15 @@ oe_result_t host_exit(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     host_exit_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -1947,7 +2040,7 @@ oe_result_t host_exit(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.arg = arg;
 
@@ -1957,7 +2050,7 @@ oe_result_t host_exit(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(host_exit_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -1985,7 +2078,7 @@ oe_result_t host_exit(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2014,10 +2107,15 @@ oe_result_t host_create_thread(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     host_create_thread_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2028,7 +2126,7 @@ oe_result_t host_create_thread(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.enc_key = enc_key;
     _args.enc = (oe_enclave_t*) enc;
@@ -2039,7 +2137,7 @@ oe_result_t host_create_thread(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(host_create_thread_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2067,7 +2165,7 @@ oe_result_t host_create_thread(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2096,10 +2194,15 @@ oe_result_t host_join_thread(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     host_join_thread_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2110,7 +2213,7 @@ oe_result_t host_join_thread(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.enc_key = enc_key;
 
@@ -2120,7 +2223,7 @@ oe_result_t host_join_thread(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(host_join_thread_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2148,7 +2251,7 @@ oe_result_t host_join_thread(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2178,10 +2281,15 @@ oe_result_t host_detach_thread(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     host_detach_thread_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2192,7 +2300,7 @@ oe_result_t host_detach_thread(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.enc_key = enc_key;
 
@@ -2202,7 +2310,7 @@ oe_result_t host_detach_thread(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(host_detach_thread_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2230,7 +2338,7 @@ oe_result_t host_detach_thread(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2262,10 +2370,15 @@ oe_result_t host_cond_timedwait(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     host_cond_timedwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2276,7 +2389,7 @@ oe_result_t host_cond_timedwait(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.cond = (pthread_cond_t*) cond;
     _args.mutex = (pthread_mutex_t*) mutex;
@@ -2288,7 +2401,7 @@ oe_result_t host_cond_timedwait(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(host_cond_timedwait_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2316,7 +2429,7 @@ oe_result_t host_cond_timedwait(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2348,10 +2461,15 @@ oe_result_t oe_host_ocall_pthread_cond_timedwait(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_cond_timedwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2362,7 +2480,7 @@ oe_result_t oe_host_ocall_pthread_cond_timedwait(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_cond_t*) a;
     _args.b = (pthread_mutex_t*) b;
@@ -2379,7 +2497,7 @@ oe_result_t oe_host_ocall_pthread_cond_timedwait(
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_cond_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_mutex_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2410,7 +2528,7 @@ oe_result_t oe_host_ocall_pthread_cond_timedwait(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2442,10 +2560,15 @@ oe_result_t oe_host_ocall_pthread_attr_init(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_attr_init_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2456,7 +2579,7 @@ oe_result_t oe_host_ocall_pthread_attr_init(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_attr_t*) a;
 
@@ -2468,7 +2591,7 @@ oe_result_t oe_host_ocall_pthread_attr_init(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_attr_init_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_attr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2497,7 +2620,7 @@ oe_result_t oe_host_ocall_pthread_attr_init(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2528,10 +2651,15 @@ oe_result_t oe_host_ocall_pthread_attr_destroy(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_attr_destroy_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2542,7 +2670,7 @@ oe_result_t oe_host_ocall_pthread_attr_destroy(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_attr_t*) a;
 
@@ -2554,7 +2682,7 @@ oe_result_t oe_host_ocall_pthread_attr_destroy(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_attr_destroy_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_attr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2583,7 +2711,7 @@ oe_result_t oe_host_ocall_pthread_attr_destroy(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2615,10 +2743,15 @@ oe_result_t oe_host_ocall_pthread_attr_setdetachstate(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_attr_setdetachstate_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2629,7 +2762,7 @@ oe_result_t oe_host_ocall_pthread_attr_setdetachstate(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_attr_t*) a;
     _args.b = b;
@@ -2642,7 +2775,7 @@ oe_result_t oe_host_ocall_pthread_attr_setdetachstate(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_attr_setdetachstate_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_attr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2671,7 +2804,7 @@ oe_result_t oe_host_ocall_pthread_attr_setdetachstate(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2702,10 +2835,15 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_init_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2716,7 +2854,7 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
 
@@ -2728,7 +2866,7 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_init_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2757,7 +2895,7 @@ oe_result_t oe_host_ocall_pthread_condattr_init(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2788,10 +2926,15 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_destroy_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2802,7 +2945,7 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
 
@@ -2814,7 +2957,7 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_destroy_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2843,7 +2986,7 @@ oe_result_t oe_host_ocall_pthread_condattr_destroy(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2875,10 +3018,15 @@ oe_result_t oe_host_ocall_pthread_condattr_setclock(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_setclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2889,7 +3037,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setclock(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
     _args.b = b;
@@ -2902,7 +3050,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setclock(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setclock_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -2931,7 +3079,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setclock(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -2963,10 +3111,15 @@ oe_result_t oe_host_ocall_pthread_condattr_setpshared(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_setpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -2977,7 +3130,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setpshared(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
     _args.b = b;
@@ -2990,7 +3143,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setpshared(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_setpshared_args_t));
     if (a) OE_ADD_SIZE(_output_buffer_size, sizeof(pthread_condattr_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3019,7 +3172,7 @@ oe_result_t oe_host_ocall_pthread_condattr_setpshared(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3051,10 +3204,15 @@ oe_result_t oe_host_ocall_pthread_condattr_getclock(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_getclock_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3065,7 +3223,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getclock(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
     _args.b = (clockid_t*) b;
@@ -3079,7 +3237,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getclock(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getclock_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(clockid_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3109,7 +3267,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getclock(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3141,10 +3299,15 @@ oe_result_t oe_host_ocall_pthread_condattr_getpshared(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_pthread_condattr_getpshared_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3155,7 +3318,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getpshared(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (pthread_condattr_t*) a;
     _args.b = (int*) b;
@@ -3169,7 +3332,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getpshared(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_pthread_condattr_getpshared_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3199,7 +3362,7 @@ oe_result_t oe_host_ocall_pthread_condattr_getpshared(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3231,10 +3394,15 @@ oe_result_t oe_host_ocall_eventfd(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_eventfd_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3245,7 +3413,7 @@ oe_result_t oe_host_ocall_eventfd(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -3256,7 +3424,7 @@ oe_result_t oe_host_ocall_eventfd(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_eventfd_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3284,7 +3452,7 @@ oe_result_t oe_host_ocall_eventfd(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3315,10 +3483,15 @@ oe_result_t oe_host_ocall_eventfd_read(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_eventfd_read_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3329,7 +3502,7 @@ oe_result_t oe_host_ocall_eventfd_read(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (eventfd_t*) b;
@@ -3342,7 +3515,7 @@ oe_result_t oe_host_ocall_eventfd_read(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_eventfd_read_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(eventfd_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3371,7 +3544,7 @@ oe_result_t oe_host_ocall_eventfd_read(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3403,10 +3576,15 @@ oe_result_t oe_host_ocall_eventfd_write(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_eventfd_write_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3417,7 +3595,7 @@ oe_result_t oe_host_ocall_eventfd_write(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -3428,7 +3606,7 @@ oe_result_t oe_host_ocall_eventfd_write(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_eventfd_write_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3456,7 +3634,7 @@ oe_result_t oe_host_ocall_eventfd_write(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3486,10 +3664,15 @@ oe_result_t oe_host_ocall_htonl(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_htonl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3500,7 +3683,7 @@ oe_result_t oe_host_ocall_htonl(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -3510,7 +3693,7 @@ oe_result_t oe_host_ocall_htonl(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_htonl_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3538,7 +3721,7 @@ oe_result_t oe_host_ocall_htonl(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3568,10 +3751,15 @@ oe_result_t oe_host_ocall_htons(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_htons_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3582,7 +3770,7 @@ oe_result_t oe_host_ocall_htons(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -3592,7 +3780,7 @@ oe_result_t oe_host_ocall_htons(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_htons_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3620,7 +3808,7 @@ oe_result_t oe_host_ocall_htons(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3650,10 +3838,15 @@ oe_result_t oe_host_ocall_ntohl(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_ntohl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3664,7 +3857,7 @@ oe_result_t oe_host_ocall_ntohl(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -3674,7 +3867,7 @@ oe_result_t oe_host_ocall_ntohl(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_ntohl_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3702,7 +3895,7 @@ oe_result_t oe_host_ocall_ntohl(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3732,10 +3925,15 @@ oe_result_t oe_host_ocall_ntohs(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_ntohs_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3746,7 +3944,7 @@ oe_result_t oe_host_ocall_ntohs(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -3756,7 +3954,7 @@ oe_result_t oe_host_ocall_ntohs(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_ntohs_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3784,7 +3982,7 @@ oe_result_t oe_host_ocall_ntohs(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3814,10 +4012,15 @@ oe_result_t oe_host_ocall_inet_addr(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_addr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3828,7 +4031,7 @@ oe_result_t oe_host_ocall_inet_addr(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -3840,7 +4043,7 @@ oe_result_t oe_host_ocall_inet_addr(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_addr_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3869,7 +4072,7 @@ oe_result_t oe_host_ocall_inet_addr(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3899,10 +4102,15 @@ oe_result_t oe_host_ocall_inet_network(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_network_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3913,7 +4121,7 @@ oe_result_t oe_host_ocall_inet_network(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -3925,7 +4133,7 @@ oe_result_t oe_host_ocall_inet_network(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_network_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -3954,7 +4162,7 @@ oe_result_t oe_host_ocall_inet_network(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -3984,10 +4192,15 @@ oe_result_t oe_host_ocall_inet_ntoa(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_ntoa_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -3998,7 +4211,7 @@ oe_result_t oe_host_ocall_inet_ntoa(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -4008,7 +4221,7 @@ oe_result_t oe_host_ocall_inet_ntoa(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_ntoa_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4036,7 +4249,7 @@ oe_result_t oe_host_ocall_inet_ntoa(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4069,10 +4282,15 @@ oe_result_t oe_host_ocall_inet_pton(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_pton_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4083,7 +4301,7 @@ oe_result_t oe_host_ocall_inet_pton(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (char*) b;
@@ -4100,7 +4318,7 @@ oe_result_t oe_host_ocall_inet_pton(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_pton_args_t));
     if (c) OE_ADD_SIZE(_output_buffer_size, _args.d);
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4130,7 +4348,7 @@ oe_result_t oe_host_ocall_inet_pton(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4165,10 +4383,15 @@ oe_result_t oe_host_ocall_inet_ntop(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_ntop_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4179,7 +4402,7 @@ oe_result_t oe_host_ocall_inet_ntop(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (void*) b;
@@ -4196,7 +4419,7 @@ oe_result_t oe_host_ocall_inet_ntop(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_ntop_args_t));
     if (c) OE_ADD_SIZE(_output_buffer_size, sizeof(char));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4226,7 +4449,7 @@ oe_result_t oe_host_ocall_inet_ntop(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4258,10 +4481,15 @@ oe_result_t oe_host_ocall_inet_aton(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_aton_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4272,7 +4500,7 @@ oe_result_t oe_host_ocall_inet_aton(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -4287,7 +4515,7 @@ oe_result_t oe_host_ocall_inet_aton(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_aton_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct in_addr));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4317,7 +4545,7 @@ oe_result_t oe_host_ocall_inet_aton(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4349,10 +4577,15 @@ oe_result_t oe_host_ocall_inet_makeaddr(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_makeaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4363,7 +4596,7 @@ oe_result_t oe_host_ocall_inet_makeaddr(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -4374,7 +4607,7 @@ oe_result_t oe_host_ocall_inet_makeaddr(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_makeaddr_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4402,7 +4635,7 @@ oe_result_t oe_host_ocall_inet_makeaddr(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4432,10 +4665,15 @@ oe_result_t oe_host_ocall_inet_lnaof(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_lnaof_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4446,7 +4684,7 @@ oe_result_t oe_host_ocall_inet_lnaof(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -4456,7 +4694,7 @@ oe_result_t oe_host_ocall_inet_lnaof(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_lnaof_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4484,7 +4722,7 @@ oe_result_t oe_host_ocall_inet_lnaof(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4514,10 +4752,15 @@ oe_result_t oe_host_ocall_inet_netof(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_inet_netof_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4528,7 +4771,7 @@ oe_result_t oe_host_ocall_inet_netof(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -4538,7 +4781,7 @@ oe_result_t oe_host_ocall_inet_netof(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_inet_netof_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4566,7 +4809,7 @@ oe_result_t oe_host_ocall_inet_netof(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4599,10 +4842,15 @@ oe_result_t oe_host_ocall_getaddrinfo(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getaddrinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4613,7 +4861,7 @@ oe_result_t oe_host_ocall_getaddrinfo(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -4633,7 +4881,7 @@ oe_result_t oe_host_ocall_getaddrinfo(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getaddrinfo_args_t));
     if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(struct addrinfo*));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4665,7 +4913,7 @@ oe_result_t oe_host_ocall_getaddrinfo(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4696,10 +4944,15 @@ oe_result_t oe_host_ocall_freeaddrinfo(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_freeaddrinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4710,7 +4963,7 @@ oe_result_t oe_host_ocall_freeaddrinfo(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (struct addrinfo*) a;
 
@@ -4720,7 +4973,7 @@ oe_result_t oe_host_ocall_freeaddrinfo(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_freeaddrinfo_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4748,7 +5001,7 @@ oe_result_t oe_host_ocall_freeaddrinfo(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4784,10 +5037,15 @@ oe_result_t oe_host_ocall_getnameinfo(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getnameinfo_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4798,7 +5056,7 @@ oe_result_t oe_host_ocall_getnameinfo(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (struct sockaddr*) a;
     _args.b = b;
@@ -4819,7 +5077,7 @@ oe_result_t oe_host_ocall_getnameinfo(
     if (c) OE_ADD_SIZE(_output_buffer_size, _args.d);
     if (e) OE_ADD_SIZE(_output_buffer_size, _args.f);
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4850,7 +5108,7 @@ oe_result_t oe_host_ocall_getnameinfo(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4882,10 +5140,15 @@ oe_result_t oe_host_ocall_gai_strerror(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gai_strerror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4896,7 +5159,7 @@ oe_result_t oe_host_ocall_gai_strerror(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -4906,7 +5169,7 @@ oe_result_t oe_host_ocall_gai_strerror(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gai_strerror_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -4934,7 +5197,7 @@ oe_result_t oe_host_ocall_gai_strerror(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -4964,10 +5227,15 @@ oe_result_t oe_host_ocall_sethostent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_sethostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -4978,7 +5246,7 @@ oe_result_t oe_host_ocall_sethostent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -4988,7 +5256,7 @@ oe_result_t oe_host_ocall_sethostent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_sethostent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5016,7 +5284,7 @@ oe_result_t oe_host_ocall_sethostent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5045,10 +5313,15 @@ oe_result_t oe_host_ocall_endhostent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_endhostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5059,7 +5332,7 @@ oe_result_t oe_host_ocall_endhostent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5068,7 +5341,7 @@ oe_result_t oe_host_ocall_endhostent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endhostent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5096,7 +5369,7 @@ oe_result_t oe_host_ocall_endhostent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5125,10 +5398,15 @@ oe_result_t oe_host_ocall_gethostent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5139,7 +5417,7 @@ oe_result_t oe_host_ocall_gethostent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5148,7 +5426,7 @@ oe_result_t oe_host_ocall_gethostent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5176,7 +5454,7 @@ oe_result_t oe_host_ocall_gethostent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5206,10 +5484,15 @@ oe_result_t oe_host_ocall_setnetent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_setnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5220,7 +5503,7 @@ oe_result_t oe_host_ocall_setnetent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -5230,7 +5513,7 @@ oe_result_t oe_host_ocall_setnetent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setnetent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5258,7 +5541,7 @@ oe_result_t oe_host_ocall_setnetent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5287,10 +5570,15 @@ oe_result_t oe_host_ocall_endnetent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_endnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5301,7 +5589,7 @@ oe_result_t oe_host_ocall_endnetent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5310,7 +5598,7 @@ oe_result_t oe_host_ocall_endnetent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endnetent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5338,7 +5626,7 @@ oe_result_t oe_host_ocall_endnetent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5367,10 +5655,15 @@ oe_result_t oe_host_ocall_getnetent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getnetent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5381,7 +5674,7 @@ oe_result_t oe_host_ocall_getnetent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5390,7 +5683,7 @@ oe_result_t oe_host_ocall_getnetent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5418,7 +5711,7 @@ oe_result_t oe_host_ocall_getnetent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5449,10 +5742,15 @@ oe_result_t oe_host_ocall_getnetbyaddr(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getnetbyaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5463,7 +5761,7 @@ oe_result_t oe_host_ocall_getnetbyaddr(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -5474,7 +5772,7 @@ oe_result_t oe_host_ocall_getnetbyaddr(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetbyaddr_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5502,7 +5800,7 @@ oe_result_t oe_host_ocall_getnetbyaddr(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5532,10 +5830,15 @@ oe_result_t oe_host_ocall_getnetbyname(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getnetbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5546,7 +5849,7 @@ oe_result_t oe_host_ocall_getnetbyname(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -5558,7 +5861,7 @@ oe_result_t oe_host_ocall_getnetbyname(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getnetbyname_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5587,7 +5890,7 @@ oe_result_t oe_host_ocall_getnetbyname(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5617,10 +5920,15 @@ oe_result_t oe_host_ocall_setservent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_setservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5631,7 +5939,7 @@ oe_result_t oe_host_ocall_setservent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -5641,7 +5949,7 @@ oe_result_t oe_host_ocall_setservent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setservent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5669,7 +5977,7 @@ oe_result_t oe_host_ocall_setservent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5698,10 +6006,15 @@ oe_result_t oe_host_ocall_endservent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_endservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5712,7 +6025,7 @@ oe_result_t oe_host_ocall_endservent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5721,7 +6034,7 @@ oe_result_t oe_host_ocall_endservent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endservent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5749,7 +6062,7 @@ oe_result_t oe_host_ocall_endservent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5778,10 +6091,15 @@ oe_result_t oe_host_ocall_getservent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getservent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5792,7 +6110,7 @@ oe_result_t oe_host_ocall_getservent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -5801,7 +6119,7 @@ oe_result_t oe_host_ocall_getservent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5829,7 +6147,7 @@ oe_result_t oe_host_ocall_getservent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5860,10 +6178,15 @@ oe_result_t oe_host_ocall_getservbyname(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getservbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5874,7 +6197,7 @@ oe_result_t oe_host_ocall_getservbyname(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -5889,7 +6212,7 @@ oe_result_t oe_host_ocall_getservbyname(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyname_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -5919,7 +6242,7 @@ oe_result_t oe_host_ocall_getservbyname(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -5950,10 +6273,15 @@ oe_result_t oe_host_ocall_getservbyport(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getservbyport_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -5964,7 +6292,7 @@ oe_result_t oe_host_ocall_getservbyport(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (char*) b;
@@ -5977,7 +6305,7 @@ oe_result_t oe_host_ocall_getservbyport(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getservbyport_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6006,7 +6334,7 @@ oe_result_t oe_host_ocall_getservbyport(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6036,10 +6364,15 @@ oe_result_t oe_host_ocall_setprotoent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_setprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6050,7 +6383,7 @@ oe_result_t oe_host_ocall_setprotoent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -6060,7 +6393,7 @@ oe_result_t oe_host_ocall_setprotoent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_setprotoent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6088,7 +6421,7 @@ oe_result_t oe_host_ocall_setprotoent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6117,10 +6450,15 @@ oe_result_t oe_host_ocall_endprotoent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_endprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6131,7 +6469,7 @@ oe_result_t oe_host_ocall_endprotoent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -6140,7 +6478,7 @@ oe_result_t oe_host_ocall_endprotoent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_endprotoent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6168,7 +6506,7 @@ oe_result_t oe_host_ocall_endprotoent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6197,10 +6535,15 @@ oe_result_t oe_host_ocall_getprotoent(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getprotoent_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6211,7 +6554,7 @@ oe_result_t oe_host_ocall_getprotoent(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -6220,7 +6563,7 @@ oe_result_t oe_host_ocall_getprotoent(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotoent_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6248,7 +6591,7 @@ oe_result_t oe_host_ocall_getprotoent(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6278,10 +6621,15 @@ oe_result_t oe_host_ocall_getprotobyname(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getprotobyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6292,7 +6640,7 @@ oe_result_t oe_host_ocall_getprotobyname(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -6304,7 +6652,7 @@ oe_result_t oe_host_ocall_getprotobyname(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotobyname_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6333,7 +6681,7 @@ oe_result_t oe_host_ocall_getprotobyname(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6363,10 +6711,15 @@ oe_result_t oe_host_ocall_getprotobynumber(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getprotobynumber_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6377,7 +6730,7 @@ oe_result_t oe_host_ocall_getprotobynumber(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -6387,7 +6740,7 @@ oe_result_t oe_host_ocall_getprotobynumber(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_getprotobynumber_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6415,7 +6768,7 @@ oe_result_t oe_host_ocall_getprotobynumber(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6445,10 +6798,15 @@ oe_result_t oe_host_ocall_gethostbyname(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyname_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6459,7 +6817,7 @@ oe_result_t oe_host_ocall_gethostbyname(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -6471,7 +6829,7 @@ oe_result_t oe_host_ocall_gethostbyname(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6500,7 +6858,7 @@ oe_result_t oe_host_ocall_gethostbyname(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6532,10 +6890,15 @@ oe_result_t oe_host_ocall_gethostbyaddr(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyaddr_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6546,7 +6909,7 @@ oe_result_t oe_host_ocall_gethostbyaddr(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (void*) a;
     _args.b = b;
@@ -6559,7 +6922,7 @@ oe_result_t oe_host_ocall_gethostbyaddr(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyaddr_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6588,7 +6951,7 @@ oe_result_t oe_host_ocall_gethostbyaddr(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6617,10 +6980,15 @@ oe_result_t oe_host_ocall___h_errno_location(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall___h_errno_location_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6631,7 +6999,7 @@ oe_result_t oe_host_ocall___h_errno_location(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
 
     /* Compute input buffer size. Include in and in-out parameters. */
@@ -6640,7 +7008,7 @@ oe_result_t oe_host_ocall___h_errno_location(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall___h_errno_location_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6668,7 +7036,7 @@ oe_result_t oe_host_ocall___h_errno_location(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6698,10 +7066,15 @@ oe_result_t oe_host_ocall_herror(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_herror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6712,7 +7085,7 @@ oe_result_t oe_host_ocall_herror(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -6724,7 +7097,7 @@ oe_result_t oe_host_ocall_herror(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_herror_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6753,7 +7126,7 @@ oe_result_t oe_host_ocall_herror(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6783,10 +7156,15 @@ oe_result_t oe_host_ocall_hstrerror(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_hstrerror_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6797,7 +7175,7 @@ oe_result_t oe_host_ocall_hstrerror(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -6807,7 +7185,7 @@ oe_result_t oe_host_ocall_hstrerror(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_hstrerror_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6835,7 +7213,7 @@ oe_result_t oe_host_ocall_hstrerror(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6870,10 +7248,15 @@ oe_result_t oe_host_ocall_gethostbyname_r(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyname_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6884,7 +7267,7 @@ oe_result_t oe_host_ocall_gethostbyname_r(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -6909,7 +7292,7 @@ oe_result_t oe_host_ocall_gethostbyname_r(
     if (e) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
     if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -6942,7 +7325,7 @@ oe_result_t oe_host_ocall_gethostbyname_r(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -6982,10 +7365,15 @@ oe_result_t oe_host_ocall_gethostbyname2_r(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyname2_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -6996,7 +7384,7 @@ oe_result_t oe_host_ocall_gethostbyname2_r(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -7022,7 +7410,7 @@ oe_result_t oe_host_ocall_gethostbyname2_r(
     if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
     if (g) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7055,7 +7443,7 @@ oe_result_t oe_host_ocall_gethostbyname2_r(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7090,10 +7478,15 @@ oe_result_t oe_host_ocall_gethostbyname2(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyname2_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7104,7 +7497,7 @@ oe_result_t oe_host_ocall_gethostbyname2(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -7117,7 +7510,7 @@ oe_result_t oe_host_ocall_gethostbyname2(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_gethostbyname2_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7146,7 +7539,7 @@ oe_result_t oe_host_ocall_gethostbyname2(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7183,10 +7576,15 @@ oe_result_t oe_host_ocall_gethostbyaddr_r(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_gethostbyaddr_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7197,7 +7595,7 @@ oe_result_t oe_host_ocall_gethostbyaddr_r(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (void*) a;
     _args.b = b;
@@ -7223,7 +7621,7 @@ oe_result_t oe_host_ocall_gethostbyaddr_r(
     if (g) OE_ADD_SIZE(_output_buffer_size, sizeof(struct hostent*));
     if (h) OE_ADD_SIZE(_output_buffer_size, sizeof(int));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7256,7 +7654,7 @@ oe_result_t oe_host_ocall_gethostbyaddr_r(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7295,10 +7693,15 @@ oe_result_t oe_host_ocall_getservbyport_r(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getservbyport_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7309,7 +7712,7 @@ oe_result_t oe_host_ocall_getservbyport_r(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (char*) b;
@@ -7332,7 +7735,7 @@ oe_result_t oe_host_ocall_getservbyport_r(
     if (d) OE_ADD_SIZE(_output_buffer_size, _args.e);
     if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent*));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7364,7 +7767,7 @@ oe_result_t oe_host_ocall_getservbyport_r(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7402,10 +7805,15 @@ oe_result_t oe_host_ocall_getservbyname_r(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_getservbyname_r_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7416,7 +7824,7 @@ oe_result_t oe_host_ocall_getservbyname_r(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -7441,7 +7849,7 @@ oe_result_t oe_host_ocall_getservbyname_r(
     if (d) OE_ADD_SIZE(_output_buffer_size, _args.e);
     if (f) OE_ADD_SIZE(_output_buffer_size, sizeof(struct servent*));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7474,7 +7882,7 @@ oe_result_t oe_host_ocall_getservbyname_r(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7507,10 +7915,15 @@ oe_result_t oe_host_ocall_epoll_create(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_epoll_create_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7521,7 +7934,7 @@ oe_result_t oe_host_ocall_epoll_create(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -7531,7 +7944,7 @@ oe_result_t oe_host_ocall_epoll_create(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_create_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7559,7 +7972,7 @@ oe_result_t oe_host_ocall_epoll_create(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7589,10 +8002,15 @@ oe_result_t oe_host_ocall_epoll_create1(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_epoll_create1_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7603,7 +8021,7 @@ oe_result_t oe_host_ocall_epoll_create1(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
 
@@ -7613,7 +8031,7 @@ oe_result_t oe_host_ocall_epoll_create1(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_create1_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7641,7 +8059,7 @@ oe_result_t oe_host_ocall_epoll_create1(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7674,10 +8092,15 @@ oe_result_t oe_host_ocall_epoll_ctl(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_epoll_ctl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7688,7 +8111,7 @@ oe_result_t oe_host_ocall_epoll_ctl(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -7703,7 +8126,7 @@ oe_result_t oe_host_ocall_epoll_ctl(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_ctl_args_t));
     if (d) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7732,7 +8155,7 @@ oe_result_t oe_host_ocall_epoll_ctl(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7766,10 +8189,15 @@ oe_result_t oe_host_ocall_epoll_wait(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_epoll_wait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7780,7 +8208,7 @@ oe_result_t oe_host_ocall_epoll_wait(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct epoll_event*) b;
@@ -7795,7 +8223,7 @@ oe_result_t oe_host_ocall_epoll_wait(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_wait_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7824,7 +8252,7 @@ oe_result_t oe_host_ocall_epoll_wait(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7859,10 +8287,15 @@ oe_result_t oe_host_ocall_epoll_pwait(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_epoll_pwait_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7873,7 +8306,7 @@ oe_result_t oe_host_ocall_epoll_pwait(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (struct epoll_event*) b;
@@ -7890,7 +8323,7 @@ oe_result_t oe_host_ocall_epoll_pwait(
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_epoll_pwait_args_t));
     if (b) OE_ADD_SIZE(_output_buffer_size, sizeof(struct epoll_event));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -7920,7 +8353,7 @@ oe_result_t oe_host_ocall_epoll_pwait(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -7952,10 +8385,15 @@ oe_result_t oe_host_ocall_creat(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_creat_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -7966,7 +8404,7 @@ oe_result_t oe_host_ocall_creat(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -7979,7 +8417,7 @@ oe_result_t oe_host_ocall_creat(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_creat_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8008,7 +8446,7 @@ oe_result_t oe_host_ocall_creat(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8040,10 +8478,15 @@ oe_result_t oe_host_ocall_fcntl(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_fcntl_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8054,7 +8497,7 @@ oe_result_t oe_host_ocall_fcntl(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -8066,7 +8509,7 @@ oe_result_t oe_host_ocall_fcntl(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_fcntl_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8094,7 +8537,7 @@ oe_result_t oe_host_ocall_fcntl(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8125,10 +8568,15 @@ oe_result_t oe_host_ocall_open(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_open_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8139,7 +8587,7 @@ oe_result_t oe_host_ocall_open(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = (char*) a;
     _args.a_len = (a) ? (strlen(a) + 1) : 0;
@@ -8152,7 +8600,7 @@ oe_result_t oe_host_ocall_open(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_open_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8181,7 +8629,7 @@ oe_result_t oe_host_ocall_open(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8213,10 +8661,15 @@ oe_result_t oe_host_ocall_openat(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_openat_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8227,7 +8680,7 @@ oe_result_t oe_host_ocall_openat(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = (char*) b;
@@ -8241,7 +8694,7 @@ oe_result_t oe_host_ocall_openat(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_openat_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8270,7 +8723,7 @@ oe_result_t oe_host_ocall_openat(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8303,10 +8756,15 @@ oe_result_t oe_host_ocall_posix_fadvise(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_posix_fadvise_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8317,7 +8775,7 @@ oe_result_t oe_host_ocall_posix_fadvise(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -8330,7 +8788,7 @@ oe_result_t oe_host_ocall_posix_fadvise(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_posix_fadvise_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8358,7 +8816,7 @@ oe_result_t oe_host_ocall_posix_fadvise(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8390,10 +8848,15 @@ oe_result_t oe_host_ocall_posix_fallocate(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_posix_fallocate_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8404,7 +8867,7 @@ oe_result_t oe_host_ocall_posix_fallocate(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -8416,7 +8879,7 @@ oe_result_t oe_host_ocall_posix_fallocate(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_posix_fallocate_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8444,7 +8907,7 @@ oe_result_t oe_host_ocall_posix_fallocate(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8476,10 +8939,15 @@ oe_result_t oe_host_ocall_lockf(
 {
     oe_result_t _result = OE_FAILURE;
 
-    /* Marshaling struct */ 
+    /* If the enclave is in crashing/crashed status, new OCALL should fail
+       immediately. */
+    if (oe_get_enclave_status() != OE_OK)
+        return oe_get_enclave_status();
+
+    /* Marshalling struct */ 
     oe_host_ocall_lockf_args_t _args, *_pargs_in = NULL, *_pargs_out=NULL;
 
-    /* Marshaling buffer and sizes */ 
+    /* Marshalling buffer and sizes */ 
     size_t _input_buffer_size = 0;
     size_t _output_buffer_size = 0;
     size_t _total_buffer_size = 0;
@@ -8490,7 +8958,7 @@ oe_result_t oe_host_ocall_lockf(
     size_t _output_buffer_offset = 0;
     size_t _output_bytes_written = 0;
 
-    /* Fill marshaling struct */
+    /* Fill marshalling struct */
     memset(&_args, 0, sizeof(_args));
     _args.a = a;
     _args.b = b;
@@ -8502,7 +8970,7 @@ oe_result_t oe_host_ocall_lockf(
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(oe_host_ocall_lockf_args_t));
 
-    /* Allocate marshaling buffer */
+    /* Allocate marshalling buffer */
     _total_buffer_size = _input_buffer_size;
     OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);
 
@@ -8530,7 +8998,7 @@ oe_result_t oe_host_ocall_lockf(
                          &_output_bytes_written)) != OE_OK)
         goto done;
 
-    /* Set up output arg struct pointer*/
+    /* Set up output arg struct pointer */
     *(uint8_t**)&_pargs_out = _output_buffer; 
     OE_ADD_SIZE(_output_buffer_offset, sizeof(*_pargs_out));
 
@@ -8552,12 +9020,6 @@ done:
     if (_buffer)
         oe_free_ocall_buffer(_buffer);
     return _result;
-}
-
-
-OE_ECALL void _dummy_old_style_ecall_to_keep_loader_happy(void* arg)
-{
-    OE_UNUSED(arg);
 }
 
 OE_EXTERNC_END

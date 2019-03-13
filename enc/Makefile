@@ -27,13 +27,13 @@ all:
 
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
-	oeedger8r ../helloworld.edl --trusted
+	oeedger8r --search-path ../  ../helloworld.edl --trusted
 	/usr/local/bin/protoc -I. helloworld.proto --cpp_out=.
 	/usr/local/bin/protoc --grpc_out=. --plugin=protoc-gen-grpc=`which grpc_cpp_plugin`  helloworld.proto
-	$(CXX) -c $(CXXFLAGS) -g -std=c++11 enclave_util.cpp enc.cpp pthread_enclave.c eventfd_enclave.c socket_enclave.c inet_enclave.c netdb_enclave.c epoll_enclave.c fcntl_enclave.c -fPIC -I/usr/local/protobufenclave/include -I/home/azureuser/grpcinstall/include -nostdinc++ #-I /usr/local/include
+	$(CXX) -c $(CXXFLAGS) -g -std=c++11 enclave_util.cpp enc.cpp pthread_enclave.c eventfd_enclave.c socket_enclave.c inet_enclave.c netdb_enclave.c epoll_enclave.c fcntl_enclave.c -fPIC -I/usr/local/include -I/usr/local/include -nostdinc++ #-I /usr/local/include
 	$(CC) -c $(CFLAGS)  -g helloworld_t.c -o helloworld_t.o 
-	$(CXX) -c $(CXXFLAGS) -g -std=c++11 helloworld.pb.cc helloworld.grpc.pb.cc -I/usr/local/protobufenclave/include/ -I/home/azureuser/grpcinstall/include -fPIC -I/usr/local/protobufenclave/include
-	$(CXX) -o helloworldenc.so enclave_util.o enc.o pthread_enclave.o eventfd_enclave.o socket_enclave.o inet_enclave.o netdb_enclave.o epoll_enclave.o fcntl_enclave.o helloworld_t.o helloworld.pb.o helloworld.grpc.pb.o -L/usr/local/protobufenclave/lib ~/grpc/libs/opt/libgrpc.a ~/grpc/libs/opt/libgrpc++.a /usr/local/protobufenclave/lib/libprotobuf.a  ~/grpc/libs/opt/libgrpc.a ~/grpc/libs/opt/libgrpc++.a ~/grpc/libs/opt/libz.a  $(LDFLAGS) -g
+	$(CXX) -c $(CXXFLAGS) -g -std=c++11 helloworld.pb.cc helloworld.grpc.pb.cc -I/usr/local/include/  -fPIC 
+	$(CXX) -o helloworldenc.so enclave_util.o enc.o pthread_enclave.o eventfd_enclave.o socket_enclave.o inet_enclave.o netdb_enclave.o epoll_enclave.o fcntl_enclave.o helloworld_t.o helloworld.pb.o helloworld.grpc.pb.o /opt/oe_libs/libgrpc_unsecure.a /opt/oe_libs/libgrpc++_unsecure.a /opt/oe_libs/libprotobuf.a  /opt/oe_libs/libgrpc_unsecure.a /opt/oe_libs/libgrpc++_unsecure.a  $(LDFLAGS) -g
 
 
 
